@@ -14,7 +14,7 @@
 - [x] Behavioral rules definert (maks 3 klikk, keyboard-first, 100% lokal, norsk UI)
 
 ### Gjenstående Blueprint-oppgaver
-- [ ] Wireframes/interaktiv prototype
+- [x] Wireframes/interaktiv prototype (Stitch-design integrert)
 - [ ] Avklar åpne spørsmål fra PRD seksjon 12:
   - [ ] Anonymisert eksempel på Excel-fil med prosjektkoder
   - [ ] Ideelt eksportformat for ukeoversikt
@@ -44,13 +44,13 @@
 - [ ] Import-modul: parse CSV/Excel til Project-objekter
 
 ### Registrering
-- [ ] Rask tidsregistrering: 15/30/60 min knapper
+- [/] Rask tidsregistrering: 15/30/60 min knapper (UI på plass)
 - [ ] Prosjektvelger (søk/dropdown)
 - [ ] Kommentar og tagg-felter
 - [ ] Dubleringsknapp ("Gjenta siste")
 
 ### Visninger
-- [ ] Daglig tidslinje-visning (visuell oversikt over dagens blokker)
+- [/] Daglig tidslinje-visning (visuell oversikt over dagens blokker) (UI på plass)
 - [ ] Redigering: endre varighet, slette, flytte blokker
 - [ ] Ukeoversikt (mandag–fredag) med total tid per prosjekt
 - [ ] Markering av hull i registreringen

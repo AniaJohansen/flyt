@@ -44,32 +44,34 @@ export function ProjectImport({ onDone }: ProjectImportProps) {
   };
 
   return (
-    <div className="project-import">
+    <div className="space-y-3">
       <input
         ref={fileRef}
         type="file"
         accept=".csv,.xlsx,.xls,.txt"
         onChange={handleFile}
+        className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 transition-colors"
       />
-      {message && <p className="import-message">{message}</p>}
+      {message && (
+        <p className="text-sm font-medium text-primary">{message}</p>
+      )}
       {rows.length > 0 && (
         <>
-          <div className="import-preview">
-            <h4>{nb.projects.preview}</h4>
-            <table className="import-table">
+          <div className="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-600">
+            <table className="w-full text-sm">
               <thead>
-                <tr>
-                  <th>{nb.projects.code}</th>
-                  <th>{nb.projects.name}</th>
-                  <th>{nb.projects.client}</th>
+                <tr className="bg-slate-100 dark:bg-slate-700">
+                  <th className="px-3 py-2 text-left text-xs font-bold text-slate-500 uppercase">{nb.projects.code}</th>
+                  <th className="px-3 py-2 text-left text-xs font-bold text-slate-500 uppercase">{nb.projects.name}</th>
+                  <th className="px-3 py-2 text-left text-xs font-bold text-slate-500 uppercase">{nb.projects.client}</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((row, i) => (
-                  <tr key={i}>
-                    <td>{row.project_code}</td>
-                    <td>{row.project_name}</td>
-                    <td>{row.client_name ?? ''}</td>
+                  <tr key={i} className="border-t border-slate-100 dark:border-slate-700">
+                    <td className="px-3 py-2 font-mono text-xs font-bold dark:text-white">{row.project_code}</td>
+                    <td className="px-3 py-2 dark:text-white">{row.project_name}</td>
+                    <td className="px-3 py-2 text-slate-500">{row.client_name ?? ''}</td>
                   </tr>
                 ))}
               </tbody>
@@ -77,8 +79,8 @@ export function ProjectImport({ onDone }: ProjectImportProps) {
           </div>
           <button
             type="button"
-            className="btn btn-primary"
             onClick={handleImport}
+            className="px-4 py-2 bg-primary rounded-lg text-sm font-bold text-white hover:bg-primary/90 transition-colors"
           >
             {nb.projects.import} ({rows.length})
           </button>

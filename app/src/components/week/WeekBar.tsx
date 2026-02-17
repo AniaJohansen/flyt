@@ -1,6 +1,5 @@
 import type { DaySummary } from '@/types';
-import { formatDate, getWeekNumber } from '@/lib/dates';
-import { WeekDay } from './WeekDay';
+import { formatDate } from '@/lib/dates';
 import { nb } from '@/i18n/nb';
 
 interface WeekBarProps {
@@ -12,6 +11,8 @@ interface WeekBarProps {
   onNextWeek: () => void;
   onExport: () => void;
   totalMinutes: number;
+  weekProgress: number;
+  totalWeekHours: string;
 }
 
 export function WeekBar({
@@ -21,54 +22,88 @@ export function WeekBar({
   onSelectDate,
   onPrevWeek,
   onNextWeek,
-  onExport,
-  totalMinutes,
+  totalMinutes: _totalMinutes,
+  weekProgress,
+  totalWeekHours,
+  onExport: _onExport,
 }: WeekBarProps) {
   const today = formatDate(new Date());
-  const weekNum = getWeekNumber(weekDays[0]);
 
   return (
-    <div className="week-bar">
-      <div className="week-bar-nav">
-        <button type="button" className="btn btn-ghost btn-sm" onClick={onPrevWeek}>
-          ‹
-        </button>
-        <span className="week-bar-label">
-          {nb.week.weekLabel} {weekNum}
-        </span>
-        <button type="button" className="btn btn-ghost btn-sm" onClick={onNextWeek}>
-          ›
-        </button>
+    <div className="grid grid-cols-7 gap-4">
+      {/* Progress Card */}
+      <div className="col-span-3 bg-slate-50 dark:bg-slate-800 rounded-xl p-4 border border-slate-100 dark:border-slate-700">
+        <div className="flex justify-between items-end mb-4">
+          <div>
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Ukentlig fremdrift</p>
+            <p className="text-2xl font-black text-slate-900 dark:text-white">
+              {totalWeekHours} <span className="text-slate-400 font-medium">/ 37,5 timer</span>
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onPrevWeek}
+              className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors"
+            >
+              <span className="material-symbols-outlined text-sm text-slate-500">chevron_left</span>
+            </button>
+            <button
+              type="button"
+              onClick={onNextWeek}
+              className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors"
+            >
+              <span className="material-symbols-outlined text-sm text-slate-500">chevron_right</span>
+            </button>
+          </div>
+        </div>
+        <div className="w-full bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
+          <div
+            className="bg-primary h-full rounded-full transition-all duration-500"
+            style={{ width: `${weekProgress}%` }}
+          ></div>
+        </div>
       </div>
 
-      <div className="week-days">
+      {/* Daily Mini Bars */}
+      <div className="col-span-4 flex justify-between gap-2 px-2 items-end pb-1">
         {weekDays.map((day, i) => {
           const dateStr = formatDate(day);
+          const dayMinutes = days[i]?.totalMinutes ?? 0;
+          const percent = Math.min(100, Math.round((dayMinutes / (7.5 * 60)) * 100));
+          const isWeekend = i >= 5;
+          const isSelected = dateStr === selectedDate;
+          const isToday = dateStr === today;
+
           return (
-            <WeekDay
+            <button
               key={dateStr}
-              dayIndex={i}
-              totalMinutes={days[i]?.totalMinutes ?? 0}
-              isSelected={dateStr === selectedDate}
-              isToday={dateStr === today}
+              type="button"
               onClick={() => onSelectDate(dateStr)}
-            />
+              className={`flex flex-col items-center gap-2 flex-1 transition-opacity ${
+                isWeekend && dayMinutes === 0 ? 'opacity-40' : ''
+              }`}
+            >
+              <div
+                className={`w-full rounded-t-sm relative h-24 overflow-hidden ${
+                  isSelected ? 'ring-2 ring-primary ring-offset-2 rounded-sm' : ''
+                } ${isWeekend ? 'bg-slate-200 dark:bg-slate-700' : 'bg-primary/20'}`}
+              >
+                {!isWeekend || dayMinutes > 0 ? (
+                  <div
+                    className="absolute bottom-0 w-full bg-primary transition-all duration-500"
+                    style={{ height: `${percent}%` }}
+                  ></div>
+                ) : null}
+              </div>
+              <span className={`text-[10px] font-bold ${
+                isToday ? 'text-primary' : 'text-slate-400'
+              }`}>
+                {nb.weekdays.short[i]}
+              </span>
+            </button>
           );
         })}
-      </div>
-
-      <div className="week-bar-footer">
-        <span className="week-total">
-          {nb.week.total}: {nb.hoursDecimal(totalMinutes)} {nb.week.hours}
-        </span>
-        <button
-          type="button"
-          className="btn btn-secondary btn-sm"
-          onClick={onExport}
-          title={nb.week.export}
-        >
-          📋 {nb.week.export}
-        </button>
       </div>
     </div>
   );

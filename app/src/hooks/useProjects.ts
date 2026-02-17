@@ -7,7 +7,7 @@ import { getNextColor } from '@/lib/colors';
 export function useProjects() {
   const projects = useLiveQuery(() => db.projects.toArray()) ?? [];
   const activeProjects = useLiveQuery(
-    () => db.projects.where('isActive').equals(1).toArray(),
+    () => db.projects.filter(p => p.isActive).toArray(),
   ) ?? [];
 
   async function addProject(data: {

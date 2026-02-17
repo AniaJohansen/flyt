@@ -2,7 +2,6 @@ import type { TimeBlock as TimeBlockType, Project, Settings } from '@/types';
 import { buildTimeline } from '@/lib/timeline';
 import { TimeBlockComponent } from './TimeBlock';
 import { GapIndicator } from './GapIndicator';
-import { nb } from '@/i18n/nb';
 
 interface DayTimelineProps {
   blocks: TimeBlockType[];
@@ -13,6 +12,7 @@ interface DayTimelineProps {
     id: string,
     changes: Partial<Pick<TimeBlockType, 'comment' | 'durationMinutes'>>,
   ) => void;
+  onFillGap?: (startTime: string) => void;
 }
 
 export function DayTimeline({
@@ -21,6 +21,7 @@ export function DayTimeline({
   settings,
   onDeleteBlock,
   onUpdateBlock,
+  onFillGap,
 }: DayTimelineProps) {
   const projectMap = new Map(projects.map((p) => [p.id, p]));
   const timeline = buildTimeline(
@@ -30,11 +31,17 @@ export function DayTimeline({
   );
 
   if (timeline.length === 0) {
-    return <div className="day-timeline-empty">{nb.timeline.empty}</div>;
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <span className="material-symbols-outlined text-6xl text-slate-300 mb-4">schedule</span>
+        <h4 className="text-lg font-bold text-slate-400 mb-2">Ingen blokker registrert</h4>
+        <p className="text-sm text-slate-400">Trykk <kbd className="px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded text-xs font-bold">N</kbd> for å starte</p>
+      </div>
+    );
   }
 
   return (
-    <div className="day-timeline">
+    <div className="space-y-0 relative timeline-line">
       {timeline.map((slot, i) => {
         if (slot.type === 'gap') {
           return (
@@ -43,6 +50,7 @@ export function DayTimeline({
               startTime={slot.startTime}
               endTime={slot.endTime}
               durationMinutes={slot.durationMinutes}
+              onFill={onFillGap}
             />
           );
         }

@@ -41,76 +41,97 @@ export function ProjectList({
 
   return (
     <Dialog open={open} onClose={onClose} title={nb.projects.title}>
-      <div className="project-list-actions">
+      <div className="flex gap-2 mb-4">
         <button
           type="button"
-          className="btn btn-secondary btn-sm"
           onClick={() => setShowImport((s) => !s)}
+          className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
         >
+          <span className="material-symbols-outlined text-sm">upload_file</span>
           {nb.projects.importCSV}
         </button>
         <button
           type="button"
-          className="btn btn-primary btn-sm"
           onClick={() => setAddMode((s) => !s)}
+          className="flex items-center gap-2 px-4 py-2 bg-primary rounded-lg text-sm font-bold text-white hover:bg-primary/90 transition-colors"
         >
-          + {nb.projects.add}
+          <span className="material-symbols-outlined text-sm">add</span>
+          {nb.projects.add}
         </button>
       </div>
 
       {showImport && (
-        <ProjectImport onDone={() => setShowImport(false)} />
+        <div className="mb-4 p-4 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700">
+          <ProjectImport onDone={() => setShowImport(false)} />
+        </div>
       )}
 
       {addMode && (
-        <div className="project-add-form">
+        <div className="mb-4 p-4 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 space-y-3">
           <input
             placeholder={nb.projects.code}
             value={newCode}
             onChange={(e) => setNewCode(e.target.value)}
+            className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-lg text-sm focus:ring-2 focus:ring-primary outline-none dark:text-white"
           />
           <input
             placeholder={nb.projects.name}
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
+            className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-lg text-sm focus:ring-2 focus:ring-primary outline-none dark:text-white"
           />
           <input
             placeholder={nb.projects.client}
             value={newClient}
             onChange={(e) => setNewClient(e.target.value)}
+            className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-lg text-sm focus:ring-2 focus:ring-primary outline-none dark:text-white"
           />
-          <button type="button" className="btn btn-primary btn-sm" onClick={handleAdd}>
+          <button
+            type="button"
+            onClick={handleAdd}
+            className="px-4 py-2 bg-primary rounded-lg text-sm font-bold text-white hover:bg-primary/90 transition-colors"
+          >
             {nb.form.save}
           </button>
         </div>
       )}
 
-      <div className="project-list">
+      <div className="space-y-2">
         {projects.map((project) => (
-          <div key={project.id} className="project-list-item">
+          <div
+            key={project.id}
+            className="flex items-center gap-3 p-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 hover:shadow-sm transition-shadow"
+          >
             <span
-              className="project-color-dot large"
+              className="size-4 rounded-full flex-shrink-0"
               style={{ backgroundColor: project.color }}
             />
-            <div className="project-list-info">
-              <span className="project-list-code">{project.code}</span>
-              <span className="project-list-name">
-                {project.clientName
-                  ? `${project.clientName} – ${project.name}`
-                  : project.name}
-              </span>
-            </div>
+            <span className="text-xs font-black text-slate-500 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded">
+              {project.code}
+            </span>
+            <span className="text-sm font-medium flex-1 truncate dark:text-white">
+              {project.clientName
+                ? `${project.clientName} – ${project.name}`
+                : project.name}
+            </span>
             <button
               type="button"
-              className={`btn btn-ghost btn-sm ${project.isActive ? '' : 'inactive'}`}
               onClick={() => onToggleActive(project.id)}
+              className={`text-xs font-bold px-3 py-1 rounded-full transition-colors ${
+                project.isActive
+                  ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
+                  : 'bg-slate-100 dark:bg-slate-700 text-slate-400 hover:bg-slate-200'
+              }`}
             >
               {project.isActive ? nb.projects.active : nb.projects.inactive}
             </button>
           </div>
         ))}
         {projects.length === 0 && (
-          <p className="empty-text">{nb.form.noProjects}</p>
+          <div className="text-center py-8">
+            <span className="material-symbols-outlined text-4xl text-slate-300 mb-2">work</span>
+            <p className="text-sm text-slate-400">{nb.form.noProjects}</p>
+          </div>
         )}
       </div>
     </Dialog>

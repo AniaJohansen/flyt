@@ -10,7 +10,7 @@ import { nb } from 'date-fns/locale';
 
 export function getWeekDays(date: Date): Date[] {
   const monday = startOfWeek(date, { weekStartsOn: 1 });
-  return Array.from({ length: 5 }, (_, i) => addDays(monday, i));
+  return Array.from({ length: 7 }, (_, i) => addDays(monday, i));
 }
 
 export function formatDate(date: Date): string {
@@ -58,4 +58,10 @@ export function minutesToTime(minutes: number): string {
 
 export function formatWeekdayDate(date: Date): string {
   return format(date, 'EEEE d. MMMM', { locale: nb });
+}
+
+export function formatWeekRange(weekDays: Date[]): string {
+  const start = weekDays[0];
+  const end = weekDays[4]; // Friday
+  return `${format(start, 'd.', { locale: nb })} - ${format(end, 'd. MMMM', { locale: nb })}`;
 }

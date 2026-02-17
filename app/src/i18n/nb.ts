@@ -4,8 +4,8 @@ export const nb = {
     subtitle: 'Timeføringshjelper',
   },
   weekdays: {
-    short: ['MA', 'TI', 'ON', 'TO', 'FR'] as const,
-    long: ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag'] as const,
+    short: ['MAN', 'TIR', 'ONS', 'TOR', 'FRE', 'LØR', 'SØN'] as const,
+    long: ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag', 'Søndag'] as const,
   },
   form: {
     addBlock: 'Legg til tidsblokk',
