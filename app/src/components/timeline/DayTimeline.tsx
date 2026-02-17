@@ -10,7 +10,7 @@ interface DayTimelineProps {
   onDeleteBlock: (id: string) => void;
   onUpdateBlock: (
     id: string,
-    changes: Partial<Pick<TimeBlockType, 'comment' | 'durationMinutes'>>,
+    changes: Partial<Pick<TimeBlockType, 'comment' | 'durationMinutes' | 'startTime'>>,
   ) => void;
   onFillGap?: (startTime: string) => void;
 }
@@ -40,9 +40,12 @@ export function DayTimeline({
     );
   }
 
+  // Reverse so latest time blocks appear at the top
+  const reversed = [...timeline].reverse();
+
   return (
     <div className="space-y-0 relative timeline-line">
-      {timeline.map((slot, i) => {
+      {reversed.map((slot, i) => {
         if (slot.type === 'gap') {
           return (
             <GapIndicator

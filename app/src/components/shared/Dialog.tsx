@@ -9,6 +9,7 @@ interface DialogProps {
 
 export function Dialog({ open, onClose, title, children }: DialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const mouseDownTargetRef = useRef<EventTarget | null>(null);
 
   useEffect(() => {
     const el = dialogRef.current;
@@ -27,6 +28,12 @@ export function Dialog({ open, onClose, title, children }: DialogProps) {
       ref={dialogRef}
       className="fixed inset-0 z-50 m-auto w-full max-w-lg rounded-xl bg-white dark:bg-slate-900 shadow-2xl border border-slate-200 dark:border-slate-700 backdrop:bg-black/30 backdrop:backdrop-blur-md p-0 overflow-hidden"
       onClose={onClose}
+      onMouseDown={(e) => { mouseDownTargetRef.current = e.target; }}
+      onClick={(e) => {
+        if (e.target === dialogRef.current && mouseDownTargetRef.current === dialogRef.current) {
+          onClose();
+        }
+      }}
     >
       <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
         <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">{title}</h2>

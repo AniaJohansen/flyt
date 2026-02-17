@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { addDays } from 'date-fns';
 import { WeekBar } from '@/components/week/WeekBar';
 import { DayTimeline } from '@/components/timeline/DayTimeline';
@@ -13,6 +13,7 @@ import { useSettings } from '@/hooks/useSettings';
 import { formatDate, formatWeekdayDate, parseDate, getWeekNumber, formatWeekRange } from '@/lib/dates';
 import { formatWeekForClipboard } from '@/lib/export';
 import { searchProjects } from '@/lib/smartInput';
+import { buildClientColorMap } from '@/lib/clientColors';
 import { nb } from '@/i18n/nb';
 import type { AddTimeFormData } from '@/types';
 
@@ -29,16 +30,28 @@ export function AppShell() {
   // Quick entry state
   const [quickDuration, setQuickDuration] = useState<15 | 30 | 60>(30);
   const [quickSearch, setQuickSearch] = useState('');
+  const [quickComment, setQuickComment] = useState('');
   const quickSearchRef = useRef<HTMLInputElement>(null);
 
   const { weekDays, days, weekSummary, blocks: weekBlocks, projects: weekProjects } =
     useWeek(currentDate);
   const { blocks, addTimeBlock, updateTimeBlock, deleteTimeBlock } =
     useTimeBlocks(selectedDate);
-  const { projects, activeProjects, addProject, updateProject, toggleActive } =
+  const { projects, activeProjects, addProject, updateProject, toggleActive, deleteProject } =
     useProjects();
   const { tags } = useTags();
   const { settings, updateSettings } = useSettings();
+
+  // Compute client-based colors: same client → same hue, project type → shade variant
+  const clientColors = useMemo(() => buildClientColorMap(projects), [projects]);
+  const coloredProjects = useMemo(
+    () => projects.map((p) => ({ ...p, color: clientColors.getColor(p.id) })),
+    [projects, clientColors],
+  );
+  const coloredActiveProjects = useMemo(
+    () => activeProjects.map((p) => ({ ...p, color: clientColors.getColor(p.id) })),
+    [activeProjects, clientColors],
+  );
 
   const lastBlock = blocks.length > 0 ? blocks[blocks.length - 1] : null;
 
@@ -74,12 +87,13 @@ export function AppShell() {
       await addTimeBlock({
         projectId,
         durationMinutes: quickDuration,
-        comment: '',
+        comment: quickComment,
         tags: [],
       });
+      setQuickComment('');
       showToast('Tidsblokk lagt til!');
     },
-    [addTimeBlock, quickDuration],
+    [addTimeBlock, quickDuration, quickComment],
   );
 
   const handleRepeatLast = useCallback(() => {
@@ -156,11 +170,11 @@ export function AppShell() {
     }
   }
   const recentProjects = recentProjectIds
-    .map((id) => projects.find((p) => p.id === id))
+    .map((id) => coloredProjects.find((p) => p.id === id))
     .filter(Boolean);
 
   const quickResults = quickSearch
-    ? searchProjects(quickSearch, activeProjects)
+    ? searchProjects(quickSearch, coloredActiveProjects)
     : [];
 
   const totalWeekHours = (weekSummary.totalMinutes / 60).toFixed(1).replace('.', ',');
@@ -284,7 +298,7 @@ export function AppShell() {
 
               <DayTimeline
                 blocks={blocks}
-                projects={projects}
+                projects={coloredProjects}
                 settings={settings}
                 onDeleteBlock={deleteTimeBlock}
                 onUpdateBlock={updateTimeBlock}
@@ -338,6 +352,13 @@ export function AppShell() {
                       onChange={(e) => setQuickSearch(e.target.value)}
                     />
                   </div>
+                  <input
+                    className="w-full mt-2 px-4 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary dark:text-white outline-none"
+                    placeholder="Kommentar..."
+                    type="text"
+                    value={quickComment}
+                    onChange={(e) => setQuickComment(e.target.value)}
+                  />
                   {quickSearch && quickResults.length > 0 && (
                     <div className="mt-2 space-y-1 max-h-40 overflow-y-auto">
                       {quickResults.map((p) => (
@@ -347,14 +368,14 @@ export function AppShell() {
                           className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group"
                         >
                           <div
-                            className="size-8 flex-shrink-0 rounded flex items-center justify-center text-white text-[10px] font-black"
-                            style={{ backgroundColor: p.color }}
+                            className="size-8 flex-shrink-0 rounded-full flex items-center justify-center"
+                            style={{ backgroundColor: `${p.color}20` }}
                           >
-                            {p.code.slice(-3)}
+                            <span className="size-3 rounded-full" style={{ backgroundColor: p.color }} />
                           </div>
-                          <div className="text-left overflow-hidden">
-                            <p className="text-xs font-bold truncate dark:text-white">{p.name}</p>
-                            <p className="text-[10px] text-slate-400 font-medium tracking-tight">{p.code}</p>
+                          <div className="text-left overflow-hidden flex-1 min-w-0">
+                            <p className="text-xs font-bold truncate dark:text-white">{p.clientName || p.name}</p>
+                            <p className="text-[10px] text-slate-400 font-medium tracking-tight">{p.projectType || p.code}</p>
                           </div>
                         </button>
                       ))}
@@ -371,32 +392,32 @@ export function AppShell() {
                         className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group"
                       >
                         <div
-                          className="size-8 flex-shrink-0 rounded flex items-center justify-center text-[10px] font-black transition-colors"
-                          style={{ backgroundColor: `${p.color}20`, color: p.color }}
+                          className="size-8 flex-shrink-0 rounded-full flex items-center justify-center"
+                          style={{ backgroundColor: `${p.color}20` }}
                         >
-                          {p.code.slice(-3)}
+                          <span className="size-3 rounded-full" style={{ backgroundColor: p.color }} />
                         </div>
-                        <div className="text-left overflow-hidden">
-                          <p className="text-xs font-bold truncate dark:text-white">{p.name}</p>
-                          <p className="text-[10px] text-slate-400 font-medium tracking-tight">{p.code}</p>
+                        <div className="text-left overflow-hidden flex-1 min-w-0">
+                          <p className="text-xs font-bold truncate dark:text-white">{p.clientName || p.name}</p>
+                          <p className="text-[10px] text-slate-400 font-medium tracking-tight">{p.projectType || p.code}</p>
                         </div>
                       </button>
                     ))}
-                    {recentProjects.length === 0 && activeProjects.slice(0, 3).map((p) => (
+                    {recentProjects.length === 0 && coloredActiveProjects.slice(0, 3).map((p) => (
                       <button
                         key={p.id}
                         onClick={() => handleQuickAdd(p.id)}
                         className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group"
                       >
                         <div
-                          className="size-8 flex-shrink-0 rounded flex items-center justify-center text-[10px] font-black"
-                          style={{ backgroundColor: `${p.color}20`, color: p.color }}
+                          className="size-8 flex-shrink-0 rounded-full flex items-center justify-center"
+                          style={{ backgroundColor: `${p.color}20` }}
                         >
-                          {p.code.slice(-3)}
+                          <span className="size-3 rounded-full" style={{ backgroundColor: p.color }} />
                         </div>
-                        <div className="text-left overflow-hidden">
-                          <p className="text-xs font-bold truncate dark:text-white">{p.name}</p>
-                          <p className="text-[10px] text-slate-400 font-medium tracking-tight">{p.code}</p>
+                        <div className="text-left overflow-hidden flex-1 min-w-0">
+                          <p className="text-xs font-bold truncate dark:text-white">{p.clientName || p.name}</p>
+                          <p className="text-[10px] text-slate-400 font-medium tracking-tight">{p.projectType || p.code}</p>
                         </div>
                       </button>
                     ))}
@@ -458,7 +479,7 @@ export function AppShell() {
         <NewEntryModal
           onClose={() => { setIsModalOpen(false); setModalStartTime(undefined); }}
           onSubmit={handleAddBlock}
-          projects={activeProjects}
+          projects={coloredActiveProjects}
           tags={tags}
           defaultDuration={settings.defaultBlockSize}
           startTime={modalStartTime}
@@ -477,10 +498,11 @@ export function AppShell() {
       <ProjectList
         open={showProjects}
         onClose={() => setShowProjects(false)}
-        projects={projects}
+        projects={coloredProjects}
         onToggleActive={toggleActive}
         onUpdate={updateProject}
         onAdd={addProject}
+        onDelete={deleteProject}
       />
     </div>
   );

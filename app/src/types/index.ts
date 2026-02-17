@@ -1,8 +1,11 @@
+export type ProjectType = 'Fastpris' | 'T&M' | 'Lisens';
+
 export interface Project {
   id: string;
   code: string;
   name: string;
   clientName: string | null;
+  projectType: ProjectType | null;
   color: string;
   isActive: boolean;
   createdAt: string;

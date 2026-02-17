@@ -73,7 +73,10 @@ const NewEntryModal: React.FC<NewEntryModalProps> = ({
       return;
     }
 
-    if (e.key === 'Escape') {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit();
+    } else if (e.key === 'Escape') {
       onClose();
     }
   };
@@ -158,10 +161,17 @@ const NewEntryModal: React.FC<NewEntryModalProps> = ({
                       className="size-3 rounded-full flex-shrink-0"
                       style={{ backgroundColor: p.color }}
                     />
-                    <span className="text-xs font-black text-slate-500">{p.code}</span>
-                    <span className="text-sm font-medium dark:text-white truncate">
-                      {p.clientName ? `${p.clientName} – ${p.name}` : p.name}
+                    <span className="text-sm font-bold dark:text-white truncate">
+                      {p.clientName || p.name}
                     </span>
+                    {p.projectType && (
+                      <span
+                        className="text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
+                        style={{ color: p.color, backgroundColor: `${p.color}15` }}
+                      >
+                        {p.projectType}
+                      </span>
+                    )}
                   </button>
                 ))}
               </div>

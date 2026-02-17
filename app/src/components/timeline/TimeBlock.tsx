@@ -8,7 +8,7 @@ interface TimeBlockProps {
   onDelete: (id: string) => void;
   onUpdate: (
     id: string,
-    changes: Partial<Pick<TimeBlockType, 'comment' | 'durationMinutes'>>,
+    changes: Partial<Pick<TimeBlockType, 'comment' | 'durationMinutes' | 'startTime'>>,
   ) => void;
 }
 
@@ -20,11 +20,20 @@ export function TimeBlockComponent({
 }: TimeBlockProps) {
   const [editing, setEditing] = useState(false);
   const [editComment, setEditComment] = useState(block.comment ?? '');
+  const [editingTime, setEditingTime] = useState(false);
+  const [editStartTime, setEditStartTime] = useState(block.startTime);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const handleSaveComment = () => {
     onUpdate(block.id, { comment: editComment || null });
     setEditing(false);
+  };
+
+  const handleSaveStartTime = () => {
+    if (editStartTime && editStartTime !== block.startTime) {
+      onUpdate(block.id, { startTime: editStartTime });
+    }
+    setEditingTime(false);
   };
 
   const handleDelete = () => {
@@ -50,7 +59,10 @@ export function TimeBlockComponent({
       </div>
 
       {/* Card */}
-      <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
+      <div
+        className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow border-l-4"
+        style={{ borderLeftColor: color, backgroundColor: `${color}06` }}
+      >
         <div className="flex justify-between items-start">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
@@ -69,7 +81,29 @@ export function TimeBlockComponent({
               </h4>
             </div>
             <p className="text-sm text-slate-500 font-medium">
-              {block.startTime} - {endTime}
+              {editingTime ? (
+                <input
+                  type="time"
+                  value={editStartTime}
+                  onChange={(e) => setEditStartTime(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSaveStartTime();
+                    if (e.key === 'Escape') { setEditingTime(false); setEditStartTime(block.startTime); }
+                  }}
+                  onBlur={handleSaveStartTime}
+                  className="text-sm px-2 py-0.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded focus:ring-2 focus:ring-primary outline-none dark:text-white"
+                  autoFocus
+                />
+              ) : (
+                <span
+                  onClick={() => { setEditingTime(true); setEditStartTime(block.startTime); }}
+                  className="cursor-pointer hover:text-primary hover:underline transition-colors"
+                  title="Klikk for å endre starttid"
+                >
+                  {block.startTime}
+                </span>
+              )}
+              {' '}- {endTime}
               <span className="text-slate-300 mx-1">&bull;</span>
               {nb.minutes(block.durationMinutes)}
             </p>
