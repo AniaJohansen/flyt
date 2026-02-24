@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, type KeyboardEvent } from 'react';
 import type { Project, Tag, AddTimeFormData } from '@/types';
 import { parseSmartInput, searchProjects } from '@/lib/smartInput';
+import { TagSelector } from '@/components/form/TagSelector';
 
 interface NewEntryModalProps {
   onClose: () => void;
@@ -43,8 +44,16 @@ const NewEntryModal: React.FC<NewEntryModalProps> = ({
   }, [parsed.durationMinutes]);
 
   useEffect(() => {
-    if (parsed.tags.length > 0) setSelectedTags(parsed.tags);
+    if (parsed.tags.length > 0) {
+      setSelectedTags((prev) => [...new Set([...prev, ...parsed.tags])]);
+    }
   }, [parsed.tags.join(',')]);
+
+  const handleToggleTag = (tagName: string) => {
+    setSelectedTags((prev) =>
+      prev.includes(tagName) ? prev.filter((t) => t !== tagName) : [...prev, tagName],
+    );
+  };
 
   const selectProject = (project: Project) => {
     setSelectedProject(project);
@@ -238,6 +247,18 @@ const NewEntryModal: React.FC<NewEntryModalProps> = ({
               ))}
             </div>
           </div>
+
+          {/* Tags */}
+          {tags.length > 0 && (
+            <div>
+              <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2 block">Tags</label>
+              <TagSelector
+                tags={tags}
+                selected={selectedTags}
+                onToggle={handleToggleTag}
+              />
+            </div>
+          )}
         </div>
 
         {/* Footer */}

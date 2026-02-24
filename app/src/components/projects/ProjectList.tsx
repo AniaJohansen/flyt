@@ -130,10 +130,6 @@ export function ProjectList({
   const colorMap = useMemo(() => buildClientColorMap(projects), [projects]);
 
   const renderProjectRow = (project: Project, inactive = false) => {
-    const clientHue = project.clientName
-      ? colorMap.getClientHue(project.clientName)
-      : null;
-
     return (
       <div key={project.id}>
         <div

@@ -78,6 +78,7 @@ export async function importProjects(
       code: row.project_code,
       name: row.project_name,
       clientName: row.client_name || null,
+      projectType: null,
       color,
       isActive: true,
       createdAt: now,

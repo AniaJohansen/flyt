@@ -5,17 +5,27 @@ import { DayTimeline } from '@/components/timeline/DayTimeline';
 import { SettingsPanel } from '@/components/settings/SettingsPanel';
 import { ProjectList } from '@/components/projects/ProjectList';
 import NewEntryModal from '@/components/NewEntryModal';
+import { Onboarding } from '@/components/Onboarding';
 import { useWeek } from '@/hooks/useWeek';
 import { useTimeBlocks } from '@/hooks/useTimeBlocks';
 import { useProjects } from '@/hooks/useProjects';
 import { useTags } from '@/hooks/useTags';
 import { useSettings } from '@/hooks/useSettings';
 import { formatDate, formatWeekdayDate, parseDate, getWeekNumber, formatWeekRange } from '@/lib/dates';
-import { formatWeekForClipboard } from '@/lib/export';
+import { formatWeekForClipboard, exportWeekToCSV } from '@/lib/export';
 import { searchProjects } from '@/lib/smartInput';
 import { buildClientColorMap } from '@/lib/clientColors';
+import { requestNotificationPermission, showReminder } from '@/lib/notifications';
 import { nb } from '@/i18n/nb';
-import type { AddTimeFormData } from '@/types';
+import { db } from '@/db';
+import type { AddTimeFormData, TimeBlock } from '@/types';
+
+type UpdatableFields = Partial<Pick<TimeBlock, 'startTime' | 'durationMinutes' | 'projectId' | 'comment' | 'tags'>>;
+
+type UndoOp =
+  | { type: 'added';   block: TimeBlock }
+  | { type: 'deleted'; block: TimeBlock }
+  | { type: 'updated'; id: string; before: UpdatableFields };
 
 export function AppShell() {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -26,6 +36,8 @@ export function AppShell() {
   const [modalStartTime, setModalStartTime] = useState<string | undefined>();
   const [toast, setToast] = useState('');
   const [activeNav, setActiveNav] = useState<'dashboard' | 'projects' | 'settings'>('dashboard');
+  const [undoStack, setUndoStack] = useState<UndoOp[]>([]);
+  const [redoStack, setRedoStack] = useState<UndoOp[]>([]);
 
   // Quick entry state
   const [quickDuration, setQuickDuration] = useState<15 | 30 | 60>(30);
@@ -42,6 +54,16 @@ export function AppShell() {
   const { tags } = useTags();
   const { settings, updateSettings } = useSettings();
 
+  // Stable refs for hook functions (avoid stale closures in callbacks)
+  const addTimeBlockRef = useRef(addTimeBlock);
+  addTimeBlockRef.current = addTimeBlock;
+  const updateTimeBlockRef = useRef(updateTimeBlock);
+  updateTimeBlockRef.current = updateTimeBlock;
+  const deleteTimeBlockRef = useRef(deleteTimeBlock);
+  deleteTimeBlockRef.current = deleteTimeBlock;
+  const blocksRef = useRef(blocks);
+  blocksRef.current = blocks;
+
   // Compute client-based colors: same client → same hue, project type → shade variant
   const clientColors = useMemo(() => buildClientColorMap(projects), [projects]);
   const coloredProjects = useMemo(
@@ -54,6 +76,16 @@ export function AppShell() {
   );
 
   const lastBlock = blocks.length > 0 ? blocks[blocks.length - 1] : null;
+
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(''), 2500);
+  };
+
+  const pushUndo = useCallback((op: UndoOp) => {
+    setUndoStack(s => [...s, op]);
+    setRedoStack([]);
+  }, []);
 
   const handleSelectDate = useCallback((date: string) => {
     setSelectedDate(date);
@@ -74,53 +106,139 @@ export function AppShell() {
     });
   }, [currentDate, weekBlocks, weekProjects]);
 
+  const handleDownloadCSV = useCallback(() => {
+    exportWeekToCSV(currentDate, weekBlocks, weekProjects);
+    showToast(nb.week.downloadedCSV);
+  }, [currentDate, weekBlocks, weekProjects]);
+
   const handleAddBlock = useCallback(
     async (data: AddTimeFormData) => {
-      await addTimeBlock(data);
+      const block = await addTimeBlockRef.current(data);
+      pushUndo({ type: 'added', block });
       showToast('Tidsblokk lagt til!');
     },
-    [addTimeBlock],
+    [pushUndo],
   );
 
   const handleQuickAdd = useCallback(
     async (projectId: string) => {
-      await addTimeBlock({
+      const block = await addTimeBlockRef.current({
         projectId,
         durationMinutes: quickDuration,
         comment: quickComment,
         tags: [],
       });
+      pushUndo({ type: 'added', block });
       setQuickComment('');
       showToast('Tidsblokk lagt til!');
     },
-    [addTimeBlock, quickDuration, quickComment],
+    [quickDuration, quickComment, pushUndo],
   );
 
   const handleRepeatLast = useCallback(() => {
     if (!lastBlock) return;
-    addTimeBlock({
+    addTimeBlockRef.current({
       projectId: lastBlock.projectId,
       durationMinutes: lastBlock.durationMinutes,
       comment: '',
       tags: lastBlock.tags,
-    }).then(() => showToast('Siste blokk gjentatt!'));
-  }, [lastBlock, addTimeBlock]);
+    }).then((block) => {
+      pushUndo({ type: 'added', block });
+      showToast('Siste blokk gjentatt!');
+    });
+  }, [lastBlock, pushUndo]);
+
+  const handleDeleteTimeBlock = useCallback(async (id: string) => {
+    const block = blocksRef.current.find(b => b.id === id);
+    if (block) pushUndo({ type: 'deleted', block });
+    await deleteTimeBlockRef.current(id);
+  }, [pushUndo]);
+
+  const handleUpdateBlock = useCallback(async (
+    id: string,
+    changes: Partial<Pick<TimeBlock, 'comment' | 'durationMinutes' | 'startTime'>>,
+  ) => {
+    const block = blocksRef.current.find(b => b.id === id);
+    if (block) {
+      const before = Object.fromEntries(
+        Object.keys(changes).map(k => [k, (block as unknown as Record<string, unknown>)[k]])
+      ) as UpdatableFields;
+      pushUndo({ type: 'updated', id, before });
+    }
+    await updateTimeBlockRef.current(id, changes);
+  }, [pushUndo]);
 
   const handleFillGap = useCallback((startTime: string) => {
     setModalStartTime(startTime);
     setIsModalOpen(true);
   }, []);
 
-  const showToast = (msg: string) => {
-    setToast(msg);
-    setTimeout(() => setToast(''), 2500);
-  };
-
   const handleNavClick = (nav: 'dashboard' | 'projects' | 'settings') => {
     setActiveNav(nav);
     if (nav === 'projects') setShowProjects(true);
     if (nav === 'settings') setShowSettings(true);
   };
+
+  const undo = useCallback(async () => {
+    const op = undoStack.at(-1);
+    if (!op) return;
+    setUndoStack(s => s.slice(0, -1));
+    if (op.type === 'added') {
+      await deleteTimeBlockRef.current(op.block.id);
+      setRedoStack(r => [...r, op]);
+    } else if (op.type === 'deleted') {
+      await db.timeBlocks.add(op.block);
+      setRedoStack(r => [...r, op]);
+    } else if (op.type === 'updated') {
+      const current = await db.timeBlocks.get(op.id);
+      if (current) {
+        const after = Object.fromEntries(
+          Object.keys(op.before).map(k => [k, (current as unknown as Record<string, unknown>)[k]])
+        ) as UpdatableFields;
+        await updateTimeBlockRef.current(op.id, op.before);
+        setRedoStack(r => [...r, { type: 'updated', id: op.id, before: after }]);
+      }
+    }
+  }, [undoStack]);
+
+  const redo = useCallback(async () => {
+    const op = redoStack.at(-1);
+    if (!op) return;
+    setRedoStack(r => r.slice(0, -1));
+    if (op.type === 'added') {
+      await db.timeBlocks.add(op.block);
+      setUndoStack(s => [...s, op]);
+    } else if (op.type === 'deleted') {
+      await deleteTimeBlockRef.current(op.block.id);
+      setUndoStack(s => [...s, op]);
+    } else if (op.type === 'updated') {
+      const current = await db.timeBlocks.get(op.id);
+      if (current) {
+        const after = Object.fromEntries(
+          Object.keys(op.before).map(k => [k, (current as unknown as Record<string, unknown>)[k]])
+        ) as UpdatableFields;
+        await updateTimeBlockRef.current(op.id, op.before);
+        setUndoStack(s => [...s, { type: 'updated', id: op.id, before: after }]);
+      }
+    }
+  }, [redoStack]);
+
+  // Daily reminder
+  useEffect(() => {
+    requestNotificationPermission();
+    const interval = setInterval(() => {
+      if (!settings.dailyReminderTime) return;
+      const now = new Date();
+      const hhmm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      if (hhmm !== settings.dailyReminderTime) return;
+      const today = formatDate(now);
+      const lastDate = localStorage.getItem('flyt_last_reminder_date');
+      if (lastDate === today) return;
+      showReminder();
+      localStorage.setItem('flyt_last_reminder_date', today);
+    }, 60_000);
+    return () => clearInterval(interval);
+  }, [settings.dailyReminderTime]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -137,6 +255,9 @@ export function AppShell() {
 
       if (isInput) return;
 
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); undo(); return; }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'y') { e.preventDefault(); redo(); return; }
+
       if (e.key === 'n' || e.key === 'N') {
         e.preventDefault();
         setModalStartTime(undefined);
@@ -148,7 +269,7 @@ export function AppShell() {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [isModalOpen, showSettings, showProjects]);
+  }, [isModalOpen, showSettings, showProjects, undo, redo]);
 
   const selectedDateObj = parseDate(selectedDate);
   const weekNum = getWeekNumber(weekDays[0]);
@@ -189,7 +310,7 @@ export function AppShell() {
             <span className="material-symbols-outlined">update</span>
           </div>
           <div>
-            <h1 className="text-lg font-bold leading-tight dark:text-white">Timebank</h1>
+            <h1 className="text-lg font-bold leading-tight dark:text-white">Flyt</h1>
             <p className="text-xs text-slate-500 font-medium tracking-wide uppercase">Timeføring</p>
           </div>
         </div>
@@ -259,6 +380,13 @@ export function AppShell() {
                 Kopier uke
               </button>
               <button
+                onClick={handleDownloadCSV}
+                className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm font-bold text-slate-900 dark:text-white hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+              >
+                <span className="material-symbols-outlined text-sm">download</span>
+                Last ned CSV
+              </button>
+              <button
                 onClick={() => { setModalStartTime(undefined); setIsModalOpen(true); }}
                 className="flex items-center gap-2 px-4 py-2 bg-primary rounded-lg text-sm font-bold text-white hover:bg-blue-700 shadow-lg shadow-primary/20 transition-all"
               >
@@ -296,14 +424,20 @@ export function AppShell() {
                 </div>
               </div>
 
-              <DayTimeline
-                blocks={blocks}
-                projects={coloredProjects}
-                settings={settings}
-                onDeleteBlock={deleteTimeBlock}
-                onUpdateBlock={updateTimeBlock}
-                onFillGap={handleFillGap}
-              />
+              {coloredProjects.length === 0 ? (
+                <Onboarding
+                  onOpenProjects={() => { setShowProjects(true); setActiveNav('projects'); }}
+                />
+              ) : (
+                <DayTimeline
+                  blocks={blocks}
+                  projects={coloredProjects}
+                  settings={settings}
+                  onDeleteBlock={handleDeleteTimeBlock}
+                  onUpdateBlock={handleUpdateBlock}
+                  onFillGap={handleFillGap}
+                />
+              )}
             </div>
 
             {/* Keyboard Shortcut Hint */}
@@ -311,6 +445,8 @@ export function AppShell() {
               <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 text-slate-300 text-[11px] font-bold px-4 py-2 rounded-full flex gap-4 shadow-2xl z-50">
                 <span className="flex items-center gap-1.5"><kbd className="bg-slate-800 px-1.5 py-0.5 rounded text-white border border-slate-700">N</kbd> Ny føring</span>
                 <span className="flex items-center gap-1.5"><kbd className="bg-slate-800 px-1.5 py-0.5 rounded text-white border border-slate-700">/</kbd> Søk prosjekt</span>
+                <span className="flex items-center gap-1.5"><kbd className="bg-slate-800 px-1.5 py-0.5 rounded text-white border border-slate-700">Ctrl+Z</kbd> Angre</span>
+                <span className="flex items-center gap-1.5"><kbd className="bg-slate-800 px-1.5 py-0.5 rounded text-white border border-slate-700">Ctrl+Y</kbd> Gjør om</span>
                 <span className="flex items-center gap-1.5"><kbd className="bg-slate-800 px-1.5 py-0.5 rounded text-white border border-slate-700">ESC</kbd> Lukk</span>
               </div>
             )}
@@ -492,6 +628,7 @@ export function AppShell() {
         onClose={() => setShowSettings(false)}
         settings={settings}
         onUpdate={updateSettings}
+        onToast={showToast}
       />
 
       {/* Projects */}

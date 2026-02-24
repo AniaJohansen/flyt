@@ -1,6 +1,6 @@
 export const nb = {
   app: {
-    title: 'Timebank',
+    title: 'Flyt',
     subtitle: 'Timeføringshjelper',
   },
   weekdays: {
@@ -34,6 +34,8 @@ export const nb = {
     hours: 'timer',
     export: 'Kopier ukeoversikt',
     exported: 'Kopiert til utklippstavle!',
+    downloadCSV: 'Last ned CSV',
+    downloadedCSV: 'CSV lastet ned!',
     today: 'I dag',
   },
   settings: {

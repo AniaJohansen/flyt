@@ -8,7 +8,7 @@ export async function requestNotificationPermission(): Promise<boolean> {
 
 export function showReminder(): void {
   if (Notification.permission !== 'granted') return;
-  new Notification('Timebank', {
+  new Notification('Flyt', {
     body: 'Husk å registrere dagens timer!',
     icon: '/pwa-192x192.png',
   });

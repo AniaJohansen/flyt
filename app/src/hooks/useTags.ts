@@ -17,5 +17,9 @@ export function useTags() {
     return tag;
   }
 
-  return { tags, addTag };
+  async function deleteTag(id: string): Promise<void> {
+    await db.tags.delete(id);
+  }
+
+  return { tags, addTag, deleteTag };
 }
