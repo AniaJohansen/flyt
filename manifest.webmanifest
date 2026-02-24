@@ -1,0 +1,1 @@
+{"name":"Flyt","short_name":"Flyt","description":"Personlig timeføringshjelper for konsulenter","start_url":"/flyt/","display":"standalone","background_color":"#1a1a2e","theme_color":"#1a1a2e","lang":"nb-NO","scope":"/flyt/","icons":[{"src":"pwa-192x192.png","sizes":"192x192","type":"image/png"},{"src":"pwa-512x512.png","sizes":"512x512","type":"image/png"}]}
