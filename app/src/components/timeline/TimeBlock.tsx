@@ -20,12 +20,22 @@ export function TimeBlockComponent({
 }: TimeBlockProps) {
   const [editing, setEditing] = useState(false);
   const [editComment, setEditComment] = useState(block.comment ?? '');
+  const [editDuration, setEditDuration] = useState<15 | 30 | 60>(block.durationMinutes);
   const [editingTime, setEditingTime] = useState(false);
   const [editStartTime, setEditStartTime] = useState(block.startTime);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  const handleSaveComment = () => {
-    onUpdate(block.id, { comment: editComment || null });
+  const handleOpenEdit = () => {
+    setEditComment(block.comment ?? '');
+    setEditDuration(block.durationMinutes);
+    setEditing(true);
+  };
+
+  const handleSaveEdit = () => {
+    const changes: Partial<Pick<TimeBlockType, 'comment' | 'durationMinutes'>> = {};
+    if (editComment !== (block.comment ?? '')) changes.comment = editComment || null;
+    if (editDuration !== block.durationMinutes) changes.durationMinutes = editDuration;
+    if (Object.keys(changes).length > 0) onUpdate(block.id, changes);
     setEditing(false);
   };
 
@@ -49,18 +59,27 @@ export function TimeBlockComponent({
   const color = project?.color ?? '#888';
 
   return (
-    <div className="relative pl-14 pb-8 group">
-      {/* Timeline circle */}
+    <div className="relative pl-14 pb-4 group">
+      {/* Timeline circle — shows start time instead of icon */}
       <div
-        className="absolute left-0 top-0 size-10 rounded-full flex items-center justify-center text-white ring-4 ring-white dark:ring-slate-900 z-10"
+        className="absolute left-0 top-0 size-10 rounded-full flex flex-col items-center justify-center text-white ring-4 ring-white dark:ring-slate-900 z-10"
         style={{ backgroundColor: color }}
+        title={`Starttid: ${block.startTime}`}
       >
-        <span className="material-symbols-outlined text-xl">schedule</span>
+        <span className="text-[9px] font-black leading-none tracking-tight tabular-nums">
+          {block.startTime}
+        </span>
       </div>
+
+      {/* Vertical connector line */}
+      <div
+        className="absolute left-5 top-10 w-px bg-slate-200 dark:bg-slate-700"
+        style={{ height: 'calc(100% - 40px)' }}
+      />
 
       {/* Card */}
       <div
-        className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow border-l-4"
+        className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow border-l-4"
         style={{ borderLeftColor: color, backgroundColor: `${color}06` }}
       >
         <div className="flex justify-between items-start">
@@ -72,7 +91,7 @@ export function TimeBlockComponent({
               >
                 {project?.code ?? '???'}
               </span>
-              <h4 className="text-base font-bold dark:text-white truncate">
+              <h4 className="text-sm font-bold dark:text-white truncate">
                 {project
                   ? project.clientName
                     ? `${project.clientName} – ${project.name}`
@@ -80,7 +99,7 @@ export function TimeBlockComponent({
                   : 'Ukjent prosjekt'}
               </h4>
             </div>
-            <p className="text-sm text-slate-500 font-medium">
+            <p className="text-xs text-slate-500 font-medium">
               {editingTime ? (
                 <input
                   type="time"
@@ -91,7 +110,7 @@ export function TimeBlockComponent({
                     if (e.key === 'Escape') { setEditingTime(false); setEditStartTime(block.startTime); }
                   }}
                   onBlur={handleSaveStartTime}
-                  className="text-sm px-2 py-0.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded focus:ring-2 focus:ring-primary outline-none dark:text-white"
+                  className="text-xs px-2 py-0.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded focus:ring-2 focus:ring-primary outline-none dark:text-white"
                   autoFocus
                 />
               ) : (
@@ -104,41 +123,61 @@ export function TimeBlockComponent({
                 </span>
               )}
               {' '}- {endTime}
-              <span className="text-slate-300 mx-1">&bull;</span>
-              {nb.minutes(block.durationMinutes)}
+              <span className="text-slate-300 mx-1.5">&bull;</span>
+              <span className="font-semibold">{nb.minutes(block.durationMinutes)}</span>
             </p>
 
             {/* Inline edit */}
             {editing ? (
-              <div className="mt-3 flex gap-2">
-                <input
-                  type="text"
-                  value={editComment}
-                  onChange={(e) => setEditComment(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleSaveComment();
-                    if (e.key === 'Escape') setEditing(false);
-                  }}
-                  className="flex-1 text-sm px-3 py-1.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary outline-none dark:text-white"
-                  placeholder="Legg til kommentar..."
-                  autoFocus
-                />
-                <button
-                  onClick={handleSaveComment}
-                  className="px-3 py-1.5 bg-primary text-white text-xs font-bold rounded-lg"
-                >
-                  Lagre
-                </button>
-                <button
-                  onClick={() => setEditing(false)}
-                  className="px-3 py-1.5 text-slate-500 text-xs font-bold"
-                >
-                  Avbryt
-                </button>
+              <div className="mt-3 space-y-2">
+                {/* Duration pills */}
+                <div className="flex gap-1.5">
+                  {([15, 30, 60] as const).map((d) => (
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={() => setEditDuration(d)}
+                      className={`px-3 py-1 text-xs font-bold rounded-full transition-colors ${
+                        editDuration === d
+                          ? 'bg-primary text-white'
+                          : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+                      }`}
+                    >
+                      {d === 60 ? '1t' : `${d}m`}
+                    </button>
+                  ))}
+                </div>
+                {/* Comment input */}
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={editComment}
+                    onChange={(e) => setEditComment(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleSaveEdit();
+                      if (e.key === 'Escape') setEditing(false);
+                    }}
+                    className="flex-1 text-sm px-3 py-1.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary outline-none dark:text-white"
+                    placeholder="Legg til kommentar..."
+                    autoFocus
+                  />
+                  <button
+                    onClick={handleSaveEdit}
+                    className="px-3 py-1.5 bg-primary text-white text-xs font-bold rounded-lg"
+                  >
+                    Lagre
+                  </button>
+                  <button
+                    onClick={() => setEditing(false)}
+                    className="px-3 py-1.5 text-slate-500 text-xs font-bold"
+                  >
+                    Avbryt
+                  </button>
+                </div>
               </div>
             ) : (
               block.comment && (
-                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 italic">{block.comment}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 italic">{block.comment}</p>
               )
             )}
 
@@ -157,7 +196,7 @@ export function TimeBlockComponent({
           {/* Actions */}
           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2">
             <button
-              onClick={() => { setEditing(!editing); setEditComment(block.comment ?? ''); }}
+              onClick={handleOpenEdit}
               className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-slate-400 transition-colors"
               title={nb.timeline.edit}
             >

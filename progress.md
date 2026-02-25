@@ -27,4 +27,11 @@
 | 2026-02-24 | Fix: TagSelector Tailwind-styling | Erstattet .tag-selector/.tag-chip CSS med Tailwind, viser fargerik chip når valgt | Ingen |
 | 2026-02-24 | Fix: TagSelector i NewEntryModal | Importert og vist TagSelector i modalen, fikset useEffect til å merge heller enn erstatte | Ingen |
 | 2026-02-24 | Feature: Tag-administrasjon | Lagt til deleteTag i useTags, ny Tags-seksjon i SettingsPanel (vis/slett/legg-til med fargepalett) | Ingen |
+| 2026-02-25 | Stylize: Tidslinje-rytme | TimeBlock: starttid i sirkel istedenfor ikon, vertikal connector-linje, pb-8→pb-4, p-5→p-4 | Ingen |
+| 2026-02-25 | Stylize: Varighet-redigering | TimeBlock: duration-pills (15/30/60) i edit-modus, handleSaveEdit lagrer comment+duration | Ingen |
+| 2026-02-25 | Stylize: WeekBar selected-day | Valgt dag: bg-primary/10 på hele kolonnen, ring-2, mørkere fill-bar, label primary+bold, timer-tekst under | Ingen |
+| 2026-02-25 | Stylize: Hurtiginnføring forenklet | Fjernet kommentar-input fra hurtiginnføring-panelet | Ingen |
+| 2026-02-25 | Stylize: Daglig prosjektoversikt | Høyre panel statistikk: viser per-prosjekt timer for valgt dag (dailyProjectTotals useMemo) | Ingen |
+| 2026-02-25 | Stylize: Onboarding polish | Steg-nummer som fargede badges, vertikal connector-linje mellom steg, tre CTAs (importer/manuell/demo) | Ingen |
+| 2026-02-25 | Trigger: Demo-data | seed.ts med 6 demo-prosjekter (ACME/Globex/interne), "Prøv med demo-data"-knapp i Onboarding | Ingen |
 

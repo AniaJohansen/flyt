@@ -66,7 +66,7 @@ export function WeekBar({
       </div>
 
       {/* Daily Mini Bars */}
-      <div className="col-span-4 flex justify-between gap-2 px-2 items-end pb-1">
+      <div className="col-span-4 flex justify-between gap-1.5 items-end pb-1">
         {weekDays.map((day, i) => {
           const dateStr = formatDate(day);
           const dayMinutes = days[i]?.totalMinutes ?? 0;
@@ -80,27 +80,38 @@ export function WeekBar({
               key={dateStr}
               type="button"
               onClick={() => onSelectDate(dateStr)}
-              className={`flex flex-col items-center gap-2 flex-1 transition-opacity ${
-                isWeekend && dayMinutes === 0 ? 'opacity-40' : ''
-              }`}
+              className={`flex flex-col items-center gap-1.5 flex-1 rounded-xl px-1 py-2 transition-all ${
+                isSelected
+                  ? 'bg-primary/10'
+                  : 'hover:bg-slate-100 dark:hover:bg-slate-800'
+              } ${isWeekend && dayMinutes === 0 ? 'opacity-40' : ''}`}
             >
               <div
-                className={`w-full rounded-t-sm relative h-24 overflow-hidden ${
-                  isSelected ? 'ring-2 ring-primary ring-offset-2 rounded-sm' : ''
-                } ${isWeekend ? 'bg-slate-200 dark:bg-slate-700' : 'bg-primary/20'}`}
+                className={`w-full rounded-sm relative h-20 overflow-hidden ${
+                  isWeekend ? 'bg-slate-200 dark:bg-slate-700' : 'bg-primary/15'
+                } ${isSelected ? 'ring-2 ring-primary ring-offset-1' : ''}`}
               >
-                {!isWeekend || dayMinutes > 0 ? (
+                {(!isWeekend || dayMinutes > 0) ? (
                   <div
-                    className="absolute bottom-0 w-full bg-primary transition-all duration-500"
+                    className={`absolute bottom-0 w-full transition-all duration-500 ${
+                      isSelected ? 'bg-primary' : 'bg-primary/60'
+                    }`}
                     style={{ height: `${percent}%` }}
                   ></div>
                 ) : null}
               </div>
               <span className={`text-[10px] font-bold ${
-                isToday ? 'text-primary' : 'text-slate-400'
+                isSelected ? 'text-primary' : isToday ? 'text-blue-400' : 'text-slate-400'
               }`}>
                 {nb.weekdays.short[i]}
               </span>
+              {isSelected && dayMinutes > 0 ? (
+                <span className="text-[9px] font-black text-primary tabular-nums leading-none">
+                  {(dayMinutes / 60).toFixed(1).replace('.', ',')}t
+                </span>
+              ) : (
+                <span className="text-[9px] leading-none">&nbsp;</span>
+              )}
             </button>
           );
         })}

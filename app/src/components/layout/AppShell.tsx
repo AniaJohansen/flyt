@@ -14,6 +14,7 @@ import { useSettings } from '@/hooks/useSettings';
 import { formatDate, formatWeekdayDate, parseDate, getWeekNumber, formatWeekRange } from '@/lib/dates';
 import { formatWeekForClipboard, exportWeekToCSV } from '@/lib/export';
 import { searchProjects } from '@/lib/smartInput';
+import { seedDemoProjects } from '@/lib/seed';
 import { buildClientColorMap } from '@/lib/clientColors';
 import { requestNotificationPermission, showReminder } from '@/lib/notifications';
 import { nb } from '@/i18n/nb';
@@ -42,7 +43,6 @@ export function AppShell() {
   // Quick entry state
   const [quickDuration, setQuickDuration] = useState<15 | 30 | 60>(30);
   const [quickSearch, setQuickSearch] = useState('');
-  const [quickComment, setQuickComment] = useState('');
   const quickSearchRef = useRef<HTMLInputElement>(null);
 
   const { weekDays, days, weekSummary, blocks: weekBlocks, projects: weekProjects } =
@@ -125,14 +125,13 @@ export function AppShell() {
       const block = await addTimeBlockRef.current({
         projectId,
         durationMinutes: quickDuration,
-        comment: quickComment,
+        comment: '',
         tags: [],
       });
       pushUndo({ type: 'added', block });
-      setQuickComment('');
       showToast('Tidsblokk lagt til!');
     },
-    [quickDuration, quickComment, pushUndo],
+    [quickDuration, pushUndo],
   );
 
   const handleRepeatLast = useCallback(() => {
@@ -301,6 +300,18 @@ export function AppShell() {
   const totalWeekHours = (weekSummary.totalMinutes / 60).toFixed(1).replace('.', ',');
   const weekProgress = Math.min(100, Math.round((weekSummary.totalMinutes / (7.5 * 5 * 60)) * 100));
 
+  // Per-project totals for selected day
+  const dailyProjectTotals = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const b of blocks) {
+      map.set(b.projectId, (map.get(b.projectId) ?? 0) + b.durationMinutes);
+    }
+    return Array.from(map.entries())
+      .map(([id, mins]) => ({ project: coloredProjects.find(p => p.id === id), mins }))
+      .filter((x): x is { project: NonNullable<typeof x.project>; mins: number } => !!x.project)
+      .sort((a, b) => b.mins - a.mins);
+  }, [blocks, coloredProjects]);
+
   return (
     <div className={`flex h-screen overflow-hidden ${settings.theme === 'dark' ? 'dark' : ''}`}>
       {/* Sidebar */}
@@ -427,6 +438,7 @@ export function AppShell() {
               {coloredProjects.length === 0 ? (
                 <Onboarding
                   onOpenProjects={() => { setShowProjects(true); setActiveNav('projects'); }}
+                  onSeedData={async () => { await seedDemoProjects(); showToast('Demo-prosjekter lagt til!'); }}
                 />
               ) : (
                 <DayTimeline
@@ -438,6 +450,7 @@ export function AppShell() {
                   onFillGap={handleFillGap}
                 />
               )}
+
             </div>
 
             {/* Keyboard Shortcut Hint */}
@@ -488,13 +501,6 @@ export function AppShell() {
                       onChange={(e) => setQuickSearch(e.target.value)}
                     />
                   </div>
-                  <input
-                    className="w-full mt-2 px-4 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary dark:text-white outline-none"
-                    placeholder="Kommentar..."
-                    type="text"
-                    value={quickComment}
-                    onChange={(e) => setQuickComment(e.target.value)}
-                  />
                   {quickSearch && quickResults.length > 0 && (
                     <div className="mt-2 space-y-1 max-h-40 overflow-y-auto">
                       {quickResults.map((p) => (
@@ -592,6 +598,30 @@ export function AppShell() {
                   </span>
                 </div>
               </div>
+
+              {/* Daily project breakdown */}
+              {dailyProjectTotals.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Dagens prosjekter</p>
+                  <div className="space-y-2">
+                    {dailyProjectTotals.map(({ project, mins }) => (
+                      <div key={project.id} className="flex items-center gap-2">
+                        <span
+                          className="size-2 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: project.color }}
+                        />
+                        <span className="text-xs font-medium text-slate-600 dark:text-slate-400 flex-1 truncate">
+                          {project.code}
+                        </span>
+                        <span className="text-xs font-bold tabular-nums text-slate-700 dark:text-slate-300">
+                          {(mins / 60).toFixed(1).replace('.', ',')}t
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="mt-auto bg-primary/5 rounded-xl p-4 border border-primary/10">
                 <p className="text-xs font-bold text-primary mb-1 uppercase tracking-widest">Tips</p>
                 <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">

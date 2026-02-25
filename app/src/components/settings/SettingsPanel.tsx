@@ -27,6 +27,7 @@ export function SettingsPanel({
 }: SettingsPanelProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importing, setImporting] = useState(false);
+  const isPersistent = localStorage.getItem('flyt_storage_persistent') === '1';
 
   // Tag management state
   const { tags, addTag, deleteTag } = useTags();
@@ -81,6 +82,26 @@ export function SettingsPanel({
   return (
     <Dialog open={open} onClose={onClose} title={nb.settings.title}>
       <div className="space-y-5">
+
+        {/* Storage status */}
+        <div className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium ${
+          isPersistent
+            ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400'
+            : 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400'
+        }`}>
+          <span className="material-symbols-outlined text-base">
+            {isPersistent ? 'verified' : 'warning'}
+          </span>
+          <div>
+            <span className="font-bold">{isPersistent ? 'Persistent lagring aktiv' : 'Best-effort lagring'}</span>
+            <span className="block text-[11px] opacity-80 mt-0.5">
+              {isPersistent
+                ? 'Data lagres i IndexedDB og overlever refresh og nettleserstart.'
+                : 'Nettleseren kan slette data ved lav diskplass. Last ned backup jevnlig.'}
+            </span>
+          </div>
+        </div>
+
         <label className="flex items-center justify-between">
           <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{nb.settings.defaultBlock}</span>
           <select
