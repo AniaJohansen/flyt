@@ -222,6 +222,17 @@ export function AppShell() {
     }
   }, [redoStack]);
 
+  // Sync theme to <html> element so Tailwind dark: variants work everywhere
+  useEffect(() => {
+    if (settings.theme === 'dark') {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('flyt_theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('flyt_theme', 'light');
+    }
+  }, [settings.theme]);
+
   // Daily reminder
   useEffect(() => {
     requestNotificationPermission();
@@ -313,7 +324,7 @@ export function AppShell() {
   }, [blocks, coloredProjects]);
 
   return (
-    <div className={`flex h-screen overflow-hidden ${settings.theme === 'dark' ? 'dark' : ''}`}>
+    <div className="flex h-screen overflow-hidden">
       {/* Sidebar */}
       <aside className="w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 flex flex-col">
         <div className="p-6 flex items-center gap-3">
