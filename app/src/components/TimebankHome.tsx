@@ -64,7 +64,7 @@ const TimebankHome: React.FC = () => {
                                 Denne uken
                             </button>
                             <button
-                                className="flex items-center gap-2 px-4 py-2 bg-primary rounded-lg text-sm font-bold text-white hover:bg-blue-700 shadow-lg shadow-primary/20 transition-all">
+                                className="flex items-center gap-2 px-4 py-2 bg-primary rounded-lg text-sm font-bold text-white hover:bg-primary-dark shadow-lg shadow-primary/20 transition-all">
                                 <span className="material-symbols-outlined text-sm">add</span>
                                 Ny føring
                             </button>

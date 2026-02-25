@@ -101,7 +101,7 @@ export function WeekBar({
                 ) : null}
               </div>
               <span className={`text-[10px] font-bold ${
-                isSelected ? 'text-primary' : isToday ? 'text-blue-400' : 'text-slate-400'
+                isSelected ? 'text-primary' : isToday ? 'text-primary-muted' : 'text-slate-400'
               }`}>
                 {nb.weekdays.short[i]}
               </span>
