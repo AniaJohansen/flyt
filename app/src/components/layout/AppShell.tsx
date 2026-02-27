@@ -72,8 +72,6 @@ const { weekDays, days, weekSummary, blocks: weekBlocks, projects: weekProjects 
     [activeProjects, clientColors],
   );
 
-  const lastBlock = blocks.length > 0 ? blocks[blocks.length - 1] : null;
-
   const showToast = (msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(''), 2500);

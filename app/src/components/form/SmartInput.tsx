@@ -93,6 +93,7 @@ export function SmartInput({
       durationMinutes: duration,
       comment: parsed.comment,
       tags: selectedTags,
+      billable: true,
     });
 
     setText('');
@@ -109,6 +110,7 @@ export function SmartInput({
       durationMinutes: duration,
       comment: '',
       tags: lastBlock.tags,
+      billable: true,
     });
   };
 
