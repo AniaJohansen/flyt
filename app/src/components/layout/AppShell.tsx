@@ -2,10 +2,12 @@ import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { addDays } from 'date-fns';
 import { WeekBar } from '@/components/week/WeekBar';
 import { DayTimeline } from '@/components/timeline/DayTimeline';
+import { DayBlocks } from '@/components/timeline/DayBlocks';
 import { SettingsPanel } from '@/components/settings/SettingsPanel';
 import { ProjectList } from '@/components/projects/ProjectList';
 import NewEntryModal from '@/components/NewEntryModal';
 import { Onboarding } from '@/components/Onboarding';
+import { AllTimeReport } from '@/components/reports/AllTimeReport';
 import { useWeek } from '@/hooks/useWeek';
 import { useTimeBlocks } from '@/hooks/useTimeBlocks';
 import { useProjects } from '@/hooks/useProjects';
@@ -13,7 +15,6 @@ import { useTags } from '@/hooks/useTags';
 import { useSettings } from '@/hooks/useSettings';
 import { formatDate, formatWeekdayDate, parseDate, getWeekNumber, formatWeekRange } from '@/lib/dates';
 import { formatWeekForClipboard, exportWeekToCSV } from '@/lib/export';
-import { searchProjects } from '@/lib/smartInput';
 import { seedDemoProjects } from '@/lib/seed';
 import { buildClientColorMap } from '@/lib/clientColors';
 import { requestNotificationPermission, showReminder } from '@/lib/notifications';
@@ -21,7 +22,7 @@ import { nb } from '@/i18n/nb';
 import { db } from '@/db';
 import type { AddTimeFormData, TimeBlock } from '@/types';
 
-type UpdatableFields = Partial<Pick<TimeBlock, 'startTime' | 'durationMinutes' | 'projectId' | 'comment' | 'tags'>>;
+type UpdatableFields = Partial<Pick<TimeBlock, 'startTime' | 'durationMinutes' | 'projectId' | 'comment' | 'tags' | 'billable'>>;
 
 type UndoOp =
   | { type: 'added';   block: TimeBlock }
@@ -33,6 +34,7 @@ export function AppShell() {
   const [selectedDate, setSelectedDate] = useState(formatDate(new Date()));
   const [showSettings, setShowSettings] = useState(false);
   const [showProjects, setShowProjects] = useState(false);
+  const [showReport, setShowReport] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalStartTime, setModalStartTime] = useState<string | undefined>();
   const [toast, setToast] = useState('');
@@ -40,12 +42,7 @@ export function AppShell() {
   const [undoStack, setUndoStack] = useState<UndoOp[]>([]);
   const [redoStack, setRedoStack] = useState<UndoOp[]>([]);
 
-  // Quick entry state
-  const [quickDuration, setQuickDuration] = useState<15 | 30 | 60>(30);
-  const [quickSearch, setQuickSearch] = useState('');
-  const quickSearchRef = useRef<HTMLInputElement>(null);
-
-  const { weekDays, days, weekSummary, blocks: weekBlocks, projects: weekProjects } =
+const { weekDays, days, weekSummary, blocks: weekBlocks, projects: weekProjects } =
     useWeek(currentDate);
   const { blocks, addTimeBlock, updateTimeBlock, deleteTimeBlock } =
     useTimeBlocks(selectedDate);
@@ -120,32 +117,6 @@ export function AppShell() {
     [pushUndo],
   );
 
-  const handleQuickAdd = useCallback(
-    async (projectId: string) => {
-      const block = await addTimeBlockRef.current({
-        projectId,
-        durationMinutes: quickDuration,
-        comment: '',
-        tags: [],
-      });
-      pushUndo({ type: 'added', block });
-      showToast('Tidsblokk lagt til!');
-    },
-    [quickDuration, pushUndo],
-  );
-
-  const handleRepeatLast = useCallback(() => {
-    if (!lastBlock) return;
-    addTimeBlockRef.current({
-      projectId: lastBlock.projectId,
-      durationMinutes: lastBlock.durationMinutes,
-      comment: '',
-      tags: lastBlock.tags,
-    }).then((block) => {
-      pushUndo({ type: 'added', block });
-      showToast('Siste blokk gjentatt!');
-    });
-  }, [lastBlock, pushUndo]);
 
   const handleDeleteTimeBlock = useCallback(async (id: string) => {
     const block = blocksRef.current.find(b => b.id === id);
@@ -155,7 +126,7 @@ export function AppShell() {
 
   const handleUpdateBlock = useCallback(async (
     id: string,
-    changes: Partial<Pick<TimeBlock, 'comment' | 'durationMinutes' | 'startTime'>>,
+    changes: Partial<Pick<TimeBlock, 'comment' | 'durationMinutes' | 'startTime' | 'billable'>>,
   ) => {
     const block = blocksRef.current.find(b => b.id === id);
     if (block) {
@@ -171,6 +142,21 @@ export function AppShell() {
     setModalStartTime(startTime);
     setIsModalOpen(true);
   }, []);
+
+  const handleBlockModeAdd = useCallback(async (
+    projectId: string,
+    durationMinutes: 15 | 30 | 60,
+  ) => {
+    const block = await addTimeBlockRef.current({
+      projectId,
+      durationMinutes,
+      comment: '',
+      tags: [],
+      billable: true,
+    });
+    pushUndo({ type: 'added', block });
+    showToast('Blokk lagt til!');
+  }, [pushUndo]);
 
   const handleNavClick = (nav: 'dashboard' | 'projects' | 'settings') => {
     setActiveNav(nav);
@@ -272,9 +258,6 @@ export function AppShell() {
         e.preventDefault();
         setModalStartTime(undefined);
         setIsModalOpen(true);
-      } else if (e.key === '/') {
-        e.preventDefault();
-        quickSearchRef.current?.focus();
       }
     };
     window.addEventListener('keydown', handler);
@@ -285,31 +268,12 @@ export function AppShell() {
   const weekNum = getWeekNumber(weekDays[0]);
   const weekRange = formatWeekRange(weekDays);
 
-  // Recent projects: last 3 unique from blocks
-  const recentProjectIds: string[] = [];
-  for (let i = blocks.length - 1; i >= 0 && recentProjectIds.length < 3; i--) {
-    if (!recentProjectIds.includes(blocks[i].projectId)) {
-      recentProjectIds.push(blocks[i].projectId);
-    }
-  }
-  // Fallback to weekly blocks if no daily blocks
-  if (recentProjectIds.length === 0) {
-    for (let i = weekBlocks.length - 1; i >= 0 && recentProjectIds.length < 3; i--) {
-      if (!recentProjectIds.includes(weekBlocks[i].projectId)) {
-        recentProjectIds.push(weekBlocks[i].projectId);
-      }
-    }
-  }
-  const recentProjects = recentProjectIds
-    .map((id) => coloredProjects.find((p) => p.id === id))
-    .filter(Boolean);
-
-  const quickResults = quickSearch
-    ? searchProjects(quickSearch, coloredActiveProjects)
-    : [];
 
   const totalWeekHours = (weekSummary.totalMinutes / 60).toFixed(1).replace('.', ',');
   const weekProgress = Math.min(100, Math.round((weekSummary.totalMinutes / (7.5 * 5 * 60)) * 100));
+
+  const billableWeekMinutes = weekBlocks.filter(b => b.billable !== false).reduce((s, b) => s + b.durationMinutes, 0);
+  const nonBillableWeekMinutes = weekBlocks.filter(b => b.billable === false).reduce((s, b) => s + b.durationMinutes, 0);
 
   // Per-project totals for selected day
   const dailyProjectTotals = useMemo(() => {
@@ -395,6 +359,13 @@ export function AppShell() {
             </div>
             <div className="flex gap-3">
               <button
+                onClick={() => setShowReport(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm font-bold text-slate-900 dark:text-white hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+              >
+                <span className="material-symbols-outlined text-sm">bar_chart</span>
+                Totaloversikt
+              </button>
+              <button
                 onClick={handleExport}
                 className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm font-bold text-slate-900 dark:text-white hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
               >
@@ -407,13 +378,6 @@ export function AppShell() {
               >
                 <span className="material-symbols-outlined text-sm">download</span>
                 Last ned CSV
-              </button>
-              <button
-                onClick={() => { setModalStartTime(undefined); setIsModalOpen(true); }}
-                className="flex items-center gap-2 px-4 py-2 bg-primary rounded-lg text-sm font-bold text-white hover:bg-primary-dark shadow-lg shadow-primary/20 transition-all"
-              >
-                <span className="material-symbols-outlined text-sm">add</span>
-                Ny føring
               </button>
             </div>
           </div>
@@ -429,6 +393,7 @@ export function AppShell() {
             totalMinutes={weekSummary.totalMinutes}
             weekProgress={weekProgress}
             totalWeekHours={totalWeekHours}
+            showWeekends={settings.showWeekends}
           />
         </header>
 
@@ -438,18 +403,28 @@ export function AppShell() {
             <div className="max-w-3xl mx-auto">
               <div className="flex items-center justify-between mb-8">
                 <h3 className="text-xl font-bold dark:text-white">
-                  Dagens tidslinje — <span className="font-medium text-slate-500">{formatWeekdayDate(selectedDateObj)}</span>
+                  {settings.trackingMode === 'blocks' ? 'Dagens bolker' : 'Dagens tidslinje'}{' '}
+                  — <span className="font-medium text-slate-500">{formatWeekdayDate(selectedDateObj)}</span>
                 </h3>
-                <div className="flex items-center gap-2 text-sm text-slate-500">
-                  <span className="size-2 rounded-full bg-primary"></span> Ført tid
-                  <span className="size-2 rounded-full border border-slate-300 ml-4"></span> Ledig tid
-                </div>
+                {settings.trackingMode !== 'blocks' && (
+                  <div className="flex items-center gap-2 text-sm text-slate-500">
+                    <span className="size-2 rounded-full bg-primary"></span> Ført tid
+                    <span className="size-2 rounded-full border border-slate-300 ml-4"></span> Ledig tid
+                  </div>
+                )}
               </div>
 
               {coloredProjects.length === 0 ? (
                 <Onboarding
                   onOpenProjects={() => { setShowProjects(true); setActiveNav('projects'); }}
                   onSeedData={async () => { await seedDemoProjects(); showToast('Demo-prosjekter lagt til!'); }}
+                />
+              ) : settings.trackingMode === 'blocks' ? (
+                <DayBlocks
+                  blocks={blocks}
+                  projects={coloredProjects}
+                  onAdd={handleBlockModeAdd}
+                  onDeleteBlock={handleDeleteTimeBlock}
                 />
               ) : (
                 <DayTimeline
@@ -468,7 +443,6 @@ export function AppShell() {
             {!isModalOpen && !showSettings && !showProjects && (
               <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 text-slate-300 text-[11px] font-bold px-4 py-2 rounded-full flex gap-4 shadow-2xl z-50">
                 <span className="flex items-center gap-1.5"><kbd className="bg-slate-800 px-1.5 py-0.5 rounded text-white border border-slate-700">N</kbd> Ny føring</span>
-                <span className="flex items-center gap-1.5"><kbd className="bg-slate-800 px-1.5 py-0.5 rounded text-white border border-slate-700">/</kbd> Søk prosjekt</span>
                 <span className="flex items-center gap-1.5"><kbd className="bg-slate-800 px-1.5 py-0.5 rounded text-white border border-slate-700">Ctrl+Z</kbd> Angre</span>
                 <span className="flex items-center gap-1.5"><kbd className="bg-slate-800 px-1.5 py-0.5 rounded text-white border border-slate-700">Ctrl+Y</kbd> Gjør om</span>
                 <span className="flex items-center gap-1.5"><kbd className="bg-slate-800 px-1.5 py-0.5 rounded text-white border border-slate-700">ESC</kbd> Lukk</span>
@@ -476,117 +450,8 @@ export function AppShell() {
             )}
           </div>
 
-          {/* Right Action Panel */}
+          {/* Right Panel */}
           <aside className="w-80 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-700 flex flex-col">
-            <div className="p-6 border-b border-slate-100 dark:border-slate-700">
-              <h3 className="font-bold text-slate-900 dark:text-white mb-4">Hurtiginnføring</h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Varighet</label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {([15, 30, 60] as const).map((d) => (
-                      <button
-                        key={d}
-                        onClick={() => setQuickDuration(d)}
-                        className={`py-2 text-xs font-bold rounded-lg border transition-all active:scale-95 ${
-                          quickDuration === d
-                            ? 'border-primary bg-primary/10 text-primary'
-                            : 'border-slate-200 dark:border-slate-600 hover:border-primary hover:text-primary dark:text-slate-300'
-                        }`}
-                      >
-                        {d === 60 ? '1t' : `${d}m`}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Velg Prosjekt</label>
-                  <div className="relative">
-                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
-                    <input
-                      ref={quickSearchRef}
-                      className="w-full pl-9 pr-4 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary dark:text-white outline-none"
-                      placeholder="Søk kode eller navn..."
-                      type="text"
-                      value={quickSearch}
-                      onChange={(e) => setQuickSearch(e.target.value)}
-                    />
-                  </div>
-                  {quickSearch && quickResults.length > 0 && (
-                    <div className="mt-2 space-y-1 max-h-40 overflow-y-auto">
-                      {quickResults.map((p) => (
-                        <button
-                          key={p.id}
-                          onClick={() => { handleQuickAdd(p.id); setQuickSearch(''); }}
-                          className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group"
-                        >
-                          <div
-                            className="size-8 flex-shrink-0 rounded-full flex items-center justify-center"
-                            style={{ backgroundColor: `${p.color}20` }}
-                          >
-                            <span className="size-3 rounded-full" style={{ backgroundColor: p.color }} />
-                          </div>
-                          <div className="text-left overflow-hidden flex-1 min-w-0">
-                            <p className="text-xs font-bold truncate dark:text-white">{p.clientName || p.name}</p>
-                            <p className="text-[10px] text-slate-400 font-medium tracking-tight">{p.projectType || p.code}</p>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <div className="pt-2">
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Siste prosjekter</label>
-                  <div className="space-y-2">
-                    {recentProjects.map((p) => p && (
-                      <button
-                        key={p.id}
-                        onClick={() => handleQuickAdd(p.id)}
-                        className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group"
-                      >
-                        <div
-                          className="size-8 flex-shrink-0 rounded-full flex items-center justify-center"
-                          style={{ backgroundColor: `${p.color}20` }}
-                        >
-                          <span className="size-3 rounded-full" style={{ backgroundColor: p.color }} />
-                        </div>
-                        <div className="text-left overflow-hidden flex-1 min-w-0">
-                          <p className="text-xs font-bold truncate dark:text-white">{p.clientName || p.name}</p>
-                          <p className="text-[10px] text-slate-400 font-medium tracking-tight">{p.projectType || p.code}</p>
-                        </div>
-                      </button>
-                    ))}
-                    {recentProjects.length === 0 && coloredActiveProjects.slice(0, 3).map((p) => (
-                      <button
-                        key={p.id}
-                        onClick={() => handleQuickAdd(p.id)}
-                        className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group"
-                      >
-                        <div
-                          className="size-8 flex-shrink-0 rounded-full flex items-center justify-center"
-                          style={{ backgroundColor: `${p.color}20` }}
-                        >
-                          <span className="size-3 rounded-full" style={{ backgroundColor: p.color }} />
-                        </div>
-                        <div className="text-left overflow-hidden flex-1 min-w-0">
-                          <p className="text-xs font-bold truncate dark:text-white">{p.clientName || p.name}</p>
-                          <p className="text-[10px] text-slate-400 font-medium tracking-tight">{p.projectType || p.code}</p>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                {lastBlock && (
-                  <button
-                    onClick={handleRepeatLast}
-                    className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-                  >
-                    <span className="material-symbols-outlined text-sm">replay</span>
-                    Gjenta siste
-                  </button>
-                )}
-              </div>
-            </div>
             <div className="p-6 flex-1 flex flex-col">
               <h3 className="font-bold text-slate-900 dark:text-white mb-4">Statistikk denne uken</h3>
               <div className="space-y-4">
@@ -598,10 +463,31 @@ export function AppShell() {
                   <span className="text-slate-500 font-medium">Fremdrift</span>
                   <span className="font-bold text-emerald-600">{weekProgress}%</span>
                 </div>
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-slate-500 font-medium">Blokker i dag</span>
-                  <span className="font-bold text-slate-700 dark:text-slate-300">{blocks.length}</span>
+                <div className="flex justify-between items-center text-xs border-t border-slate-100 dark:border-slate-700 pt-3">
+                  <span className="flex items-center gap-1 text-slate-500 font-medium">
+                    <span className="material-symbols-outlined text-[13px] text-emerald-500">attach_money</span>
+                    Fakturerbar
+                  </span>
+                  <span className="font-bold text-emerald-600">
+                    {(billableWeekMinutes / 60).toFixed(1).replace('.', ',')}t
+                    {weekSummary.totalMinutes > 0 && (
+                      <span className="text-slate-400 font-normal ml-1">
+                        ({Math.round((billableWeekMinutes / weekSummary.totalMinutes) * 100)}%)
+                      </span>
+                    )}
+                  </span>
                 </div>
+                {nonBillableWeekMinutes > 0 && (
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="flex items-center gap-1 text-slate-500 font-medium">
+                      <span className="material-symbols-outlined text-[13px] text-slate-400">money_off</span>
+                      Ikke-fakturerbar
+                    </span>
+                    <span className="font-bold text-slate-500">
+                      {(nonBillableWeekMinutes / 60).toFixed(1).replace('.', ',')}t
+                    </span>
+                  </div>
+                )}
                 <div className="flex justify-between items-center text-xs border-t border-slate-100 dark:border-slate-700 pt-3">
                   <span className="text-slate-900 dark:text-white font-bold">Gjenstår</span>
                   <span className="font-black text-slate-900 dark:text-white">
@@ -671,6 +557,9 @@ export function AppShell() {
         onUpdate={updateSettings}
         onToast={showToast}
       />
+
+      {/* All-time report */}
+      <AllTimeReport open={showReport} onClose={() => setShowReport(false)} />
 
       {/* Projects */}
       <ProjectList

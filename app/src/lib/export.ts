@@ -40,49 +40,68 @@ export function formatWeekForClipboard(
   lines.push(`UKE ${weekNum}, ${year}`);
   lines.push('');
 
+  let grandBillableMinutes = 0;
+  let grandNonBillableMinutes = 0;
+
   for (const day of exportDays) {
     if (day.blocks.length === 0) continue;
 
-    const hours = (day.totalMinutes / 60).toFixed(1).replace('.', ',');
-    lines.push(
-      `${day.dayName.toUpperCase()} ${day.date} (${hours} ${nbStrings.week.hours})`,
-    );
+    const dayBillable = day.blocks
+      .filter((b) => b.billable !== false)
+      .reduce((s, b) => s + b.durationMinutes, 0);
+    const dayNonBillable = day.blocks
+      .filter((b) => b.billable === false)
+      .reduce((s, b) => s + b.durationMinutes, 0);
 
-    const projectTotals = new Map<
-      string,
-      { minutes: number; comments: string[] }
-    >();
+    grandBillableMinutes += dayBillable;
+    grandNonBillableMinutes += dayNonBillable;
+
+    const totalHours = (day.totalMinutes / 60).toFixed(1).replace('.', ',');
+    const ifPart = dayNonBillable > 0
+      ? `, herav ${(dayNonBillable / 60).toFixed(1).replace('.', ',')}t ikke-fakturerbar`
+      : '';
+    lines.push(`${day.dayName.toUpperCase()} ${day.date} (${totalHours} ${nbStrings.week.hours}${ifPart})`);
+
+    // Group by project + billable status, preserving project order
+    const projectOrder: string[] = [];
+    const billableTotals = new Map<string, { minutes: number; comments: string[] }>();
+    const nonBillableTotals = new Map<string, { minutes: number; comments: string[] }>();
+
     for (const block of day.blocks) {
-      const existing = projectTotals.get(block.projectId) || {
-        minutes: 0,
-        comments: [],
-      };
+      if (!projectOrder.includes(block.projectId)) projectOrder.push(block.projectId);
+      const map = block.billable !== false ? billableTotals : nonBillableTotals;
+      const existing = map.get(block.projectId) ?? { minutes: 0, comments: [] };
       existing.minutes += block.durationMinutes;
       if (block.comment) existing.comments.push(block.comment);
-      projectTotals.set(block.projectId, existing);
+      map.set(block.projectId, existing);
     }
 
-    for (const [projectId, totals] of projectTotals) {
+    const renderRow = (projectId: string, totals: { minutes: number; comments: string[] }, nonBillable: boolean) => {
       const project = projectMap.get(projectId);
-      if (!project) continue;
+      if (!project) return;
       const hours = (totals.minutes / 60).toFixed(1).replace('.', ',');
-      const clientPart = project.clientName
-        ? `${project.clientName} - `
-        : '';
-      const commentPart =
-        totals.comments.length > 0
-          ? ` (${totals.comments.join(', ')})`
-          : '';
-      lines.push(
-        `- ${project.code} ${clientPart}${project.name}: ${hours}t${commentPart}`,
-      );
+      const clientPart = project.clientName ? `${project.clientName} - ` : '';
+      const commentPart = totals.comments.length > 0 ? ` (${totals.comments.join(', ')})` : '';
+      const ifTag = nonBillable ? '  [Ikke-fakturerbar]' : '';
+      lines.push(`- ${project.code} ${clientPart}${project.name}: ${hours}t${commentPart}${ifTag}`);
+    };
+
+    // Per project: billable row first, then non-billable row immediately after
+    for (const projectId of projectOrder) {
+      if (billableTotals.has(projectId)) renderRow(projectId, billableTotals.get(projectId)!, false);
+      if (nonBillableTotals.has(projectId)) renderRow(projectId, nonBillableTotals.get(projectId)!, true);
     }
+
     lines.push('');
   }
 
   const totalMinutes = exportDays.reduce((sum, d) => sum + d.totalMinutes, 0);
   const totalHours = (totalMinutes / 60).toFixed(1).replace('.', ',');
   lines.push(`TOTALT UKE: ${totalHours} ${nbStrings.week.hours}`);
+  lines.push(`  Fakturerbar:        ${(grandBillableMinutes / 60).toFixed(1).replace('.', ',')}t`);
+  if (grandNonBillableMinutes > 0) {
+    lines.push(`  Ikke-fakturerbar:  ${(grandNonBillableMinutes / 60).toFixed(1).replace('.', ',')}t`);
+  }
 
   return lines.join('\n');
 }
@@ -98,7 +117,7 @@ export function exportWeekToCSV(
   const days = getWeekDays(weekDate);
   const projectMap = new Map(projects.map((p) => [p.id, p]));
 
-  const header = 'Dato;Ukedag;Prosjektkode;Kundenavn;Prosjektnavn;Type;Timer;Kommentarer';
+  const header = 'Dato;Ukedag;Prosjektkode;Kundenavn;Prosjektnavn;Type;Fakturerbarhet;Timer;Kommentarer';
   const rows: string[] = [header];
 
   for (let i = 0; i < days.length; i++) {
@@ -108,19 +127,24 @@ export function exportWeekToCSV(
       .sort((a, b) => a.startTime.localeCompare(b.startTime));
     if (dayBlocks.length === 0) continue;
 
-    const projectTotals = new Map<string, { minutes: number; comments: string[] }>();
+    // Group by project + billable status so billable and non-billable get separate rows
+    const projectTotals = new Map<string, { minutes: number; comments: string[]; billable: boolean }>();
     for (const block of dayBlocks) {
-      const existing = projectTotals.get(block.projectId) ?? { minutes: 0, comments: [] };
+      const isBillable = block.billable !== false;
+      const key = `${block.projectId}:${isBillable ? '1' : '0'}`;
+      const existing = projectTotals.get(key) ?? { minutes: 0, comments: [], billable: isBillable };
       existing.minutes += block.durationMinutes;
       if (block.comment) existing.comments.push(block.comment);
-      projectTotals.set(block.projectId, existing);
+      projectTotals.set(key, existing);
     }
 
-    for (const [projectId, totals] of projectTotals) {
+    for (const [key, totals] of projectTotals) {
+      const projectId = key.split(':')[0];
       const project = projectMap.get(projectId);
       if (!project) continue;
       const hoursDecimal = (totals.minutes / 60).toFixed(2).replace('.', ',');
       const comment = totals.comments.join(' / ').replace(/;/g, ',');
+      const billableLabel = totals.billable ? 'Fakturerbar' : 'Ikke-fakturerbar';
       rows.push([
         dateStr,
         nbStrings.weekdays.long[i],
@@ -128,6 +152,7 @@ export function exportWeekToCSV(
         project.clientName ?? '',
         project.name,
         project.projectType ?? '',
+        billableLabel,
         hoursDecimal,
         comment,
       ].join(';'));

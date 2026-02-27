@@ -10,7 +10,7 @@ interface DayTimelineProps {
   onDeleteBlock: (id: string) => void;
   onUpdateBlock: (
     id: string,
-    changes: Partial<Pick<TimeBlockType, 'comment' | 'durationMinutes' | 'startTime'>>,
+    changes: Partial<Pick<TimeBlockType, 'comment' | 'durationMinutes' | 'startTime' | 'billable'>>,
   ) => void;
   onFillGap?: (startTime: string) => void;
 }

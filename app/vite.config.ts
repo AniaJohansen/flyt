@@ -15,8 +15,8 @@ export default defineConfig({
         description: 'Personlig timeføringshjelper for konsulenter',
         lang: 'nb-NO',
         display: 'standalone',
-        theme_color: '#521c14',
-        background_color: '#DFD4CF',
+        theme_color: '#1a1a2e',
+        background_color: '#1a1a2e',
         icons: [
           {
             src: 'pwa-192x192.png',

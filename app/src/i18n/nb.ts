@@ -48,6 +48,10 @@ export const nb = {
     theme: 'Tema',
     themeLight: 'Lyst',
     themeDark: 'Mørkt',
+    showWeekends: 'Vis helgedager i ukeoversikten',
+    trackingMode: 'Visningsformat for dag',
+    trackingModeTimed: 'Med klokkeslett',
+    trackingModeBlocks: 'Uten klokkeslett',
     close: 'Lukk',
   },
   projects: {

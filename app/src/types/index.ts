@@ -20,6 +20,7 @@ export interface TimeBlock {
   projectId: string;
   comment: string | null;
   tags: string[];
+  billable: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -39,6 +40,8 @@ export interface Settings {
   workDayEnd: string; // HH:mm
   defaultTags: string[];
   theme: 'light' | 'dark';
+  showWeekends: boolean;
+  trackingMode: 'timed' | 'blocks';
 }
 
 export interface ProjectImportRow {
@@ -83,5 +86,6 @@ export interface AddTimeFormData {
   durationMinutes: 15 | 30 | 60;
   comment: string;
   tags: string[];
+  billable: boolean;
   startTime?: string; // optional override
 }

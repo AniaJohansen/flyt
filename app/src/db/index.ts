@@ -25,6 +25,16 @@ export class TimebankDB extends Dexie {
         if (p.projectType === undefined) p.projectType = null;
       }),
     );
+    this.version(3).stores({
+      projects: 'id, code, isActive, updatedAt',
+      timeBlocks: 'id, date, projectId, [date+startTime]',
+      tags: 'id, name',
+      settings: 'id',
+    }).upgrade(tx =>
+      tx.table('timeBlocks').toCollection().modify(b => {
+        if (b.billable === undefined) b.billable = true;
+      }),
+    );
   }
 }
 

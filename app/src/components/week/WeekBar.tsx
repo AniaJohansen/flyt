@@ -13,6 +13,7 @@ interface WeekBarProps {
   totalMinutes: number;
   weekProgress: number;
   totalWeekHours: string;
+  showWeekends?: boolean;
 }
 
 export function WeekBar({
@@ -26,8 +27,12 @@ export function WeekBar({
   weekProgress,
   totalWeekHours,
   onExport: _onExport,
+  showWeekends = false,
 }: WeekBarProps) {
   const today = formatDate(new Date());
+  const visibleDays = weekDays
+    .map((day, i) => ({ day, summary: days[i], i }))
+    .filter(({ i }) => showWeekends || i < 5);
 
   return (
     <div className="grid grid-cols-7 gap-4">
@@ -67,9 +72,9 @@ export function WeekBar({
 
       {/* Daily Mini Bars */}
       <div className="col-span-4 flex justify-between gap-1.5 items-end pb-1">
-        {weekDays.map((day, i) => {
+        {visibleDays.map(({ day, summary, i }) => {
           const dateStr = formatDate(day);
-          const dayMinutes = days[i]?.totalMinutes ?? 0;
+          const dayMinutes = summary?.totalMinutes ?? 0;
           const percent = Math.min(100, Math.round((dayMinutes / (7.5 * 60)) * 100));
           const isWeekend = i >= 5;
           const isSelected = dateStr === selectedDate;
@@ -101,7 +106,7 @@ export function WeekBar({
                 ) : null}
               </div>
               <span className={`text-[10px] font-bold ${
-                isSelected ? 'text-primary' : isToday ? 'text-primary-muted' : 'text-slate-400'
+                isSelected ? 'text-primary' : isToday ? 'text-blue-400' : 'text-slate-400'
               }`}>
                 {nb.weekdays.short[i]}
               </span>

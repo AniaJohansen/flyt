@@ -24,6 +24,7 @@ const NewEntryModal: React.FC<NewEntryModalProps> = ({
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [duration, setDuration] = useState<15 | 30 | 60>(defaultDuration);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [billable, setBillable] = useState(true);
   const [showDropdown, setShowDropdown] = useState(false);
   const [dropdownIndex, setDropdownIndex] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -97,6 +98,7 @@ const NewEntryModal: React.FC<NewEntryModalProps> = ({
       durationMinutes: duration,
       comment: parsed.comment || text.trim(),
       tags: selectedTags,
+      billable,
       startTime,
     });
     onClose();
@@ -246,6 +248,25 @@ const NewEntryModal: React.FC<NewEntryModalProps> = ({
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Billable toggle */}
+          <div className="flex items-center justify-between">
+            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Fakturerbarhet</label>
+            <button
+              type="button"
+              onClick={() => setBillable((b) => !b)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+                billable
+                  ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400'
+                  : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
+              }`}
+            >
+              <span className="material-symbols-outlined text-sm">
+                {billable ? 'attach_money' : 'money_off'}
+              </span>
+              {billable ? 'Fakturerbar' : 'Ikke-fakturerbar'}
+            </button>
           </div>
 
           {/* Tags */}

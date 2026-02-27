@@ -68,7 +68,7 @@ export function Onboarding({ onOpenProjects, onSeedData }: OnboardingProps) {
       <div className="flex flex-col gap-2 w-full">
         <button
           onClick={onOpenProjects}
-          className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-primary rounded-xl text-sm font-bold text-white hover:bg-primary-dark shadow-lg shadow-primary/20 transition-all"
+          className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-primary rounded-xl text-sm font-bold text-white hover:bg-blue-700 shadow-lg shadow-primary/20 transition-all"
         >
           <span className="material-symbols-outlined text-sm">upload_file</span>
           Importer prosjekter

@@ -10,6 +10,8 @@ const DEFAULTS: Settings = {
   workDayEnd: '16:00',
   defaultTags: [],
   theme: 'light',
+  showWeekends: false,
+  trackingMode: 'timed',
 };
 
 export function useSettings() {

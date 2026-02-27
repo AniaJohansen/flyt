@@ -177,6 +177,55 @@ export function SettingsPanel({
           </div>
         </div>
 
+        <label className="flex items-center justify-between">
+          <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{nb.settings.showWeekends}</span>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={settings.showWeekends}
+            onClick={() => onUpdate({ showWeekends: !settings.showWeekends })}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
+              settings.showWeekends ? 'bg-primary' : 'bg-slate-200 dark:bg-slate-700'
+            }`}
+          >
+            <span
+              className={`inline-block size-4 transform rounded-full bg-white shadow transition-transform ${
+                settings.showWeekends ? 'translate-x-6' : 'translate-x-1'
+              }`}
+            />
+          </button>
+        </label>
+
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{nb.settings.trackingMode}</span>
+          <div className="flex gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg">
+            <button
+              type="button"
+              onClick={() => onUpdate({ trackingMode: 'timed' })}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
+                settings.trackingMode !== 'blocks'
+                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+              }`}
+            >
+              <span className="material-symbols-outlined text-sm">schedule</span>
+              {nb.settings.trackingModeTimed}
+            </button>
+            <button
+              type="button"
+              onClick={() => onUpdate({ trackingMode: 'blocks' })}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
+                settings.trackingMode === 'blocks'
+                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+              }`}
+            >
+              <span className="material-symbols-outlined text-sm">view_agenda</span>
+              {nb.settings.trackingModeBlocks}
+            </button>
+          </div>
+        </div>
+
         {/* Tags section */}
         <div className="pt-2 border-t border-slate-100 dark:border-slate-700">
           <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Tags</p>

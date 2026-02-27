@@ -17,6 +17,8 @@ const DEFAULT_SETTINGS: Settings = {
   workDayEnd: '16:00',
   defaultTags: [],
   theme: 'light',
+  showWeekends: false,
+  trackingMode: 'timed',
 };
 
 export async function seedDatabase(): Promise<void> {

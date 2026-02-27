@@ -43,6 +43,7 @@ export function useTimeBlocks(date: string) {
       projectId: data.projectId,
       comment: data.comment || null,
       tags: data.tags,
+      billable: data.billable ?? true,
       createdAt: now,
       updatedAt: now,
     };
@@ -52,7 +53,7 @@ export function useTimeBlocks(date: string) {
 
   async function updateTimeBlock(
     id: string,
-    changes: Partial<Pick<TimeBlock, 'startTime' | 'durationMinutes' | 'projectId' | 'comment' | 'tags'>>,
+    changes: Partial<Pick<TimeBlock, 'startTime' | 'durationMinutes' | 'projectId' | 'comment' | 'tags' | 'billable'>>,
   ): Promise<void> {
     await db.timeBlocks.update(id, {
       ...changes,

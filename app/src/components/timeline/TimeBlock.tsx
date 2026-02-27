@@ -8,7 +8,7 @@ interface TimeBlockProps {
   onDelete: (id: string) => void;
   onUpdate: (
     id: string,
-    changes: Partial<Pick<TimeBlockType, 'comment' | 'durationMinutes' | 'startTime'>>,
+    changes: Partial<Pick<TimeBlockType, 'comment' | 'durationMinutes' | 'startTime' | 'billable'>>,
   ) => void;
 }
 
@@ -29,6 +29,10 @@ export function TimeBlockComponent({
     setEditComment(block.comment ?? '');
     setEditDuration(block.durationMinutes);
     setEditing(true);
+  };
+
+  const handleToggleBillable = () => {
+    onUpdate(block.id, { billable: !block.billable });
   };
 
   const handleSaveEdit = () => {
@@ -91,6 +95,12 @@ export function TimeBlockComponent({
               >
                 {project?.code ?? '???'}
               </span>
+              {!block.billable && (
+                <span className="inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400">
+                  <span className="material-symbols-outlined text-[12px]">money_off</span>
+                  IB
+                </span>
+              )}
               <h4 className="text-sm font-bold dark:text-white truncate">
                 {project
                   ? project.clientName
@@ -195,6 +205,19 @@ export function TimeBlockComponent({
 
           {/* Actions */}
           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2">
+            <button
+              onClick={handleToggleBillable}
+              className={`p-1.5 rounded transition-colors ${
+                block.billable
+                  ? 'hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400'
+                  : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 hover:bg-emerald-100 dark:hover:bg-emerald-900/40'
+              }`}
+              title={block.billable ? 'Merk som ikke-fakturerbar' : 'Merk som fakturerbar'}
+            >
+              <span className="material-symbols-outlined text-lg">
+                {block.billable ? 'money_off' : 'attach_money'}
+              </span>
+            </button>
             <button
               onClick={handleOpenEdit}
               className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-slate-400 transition-colors"
