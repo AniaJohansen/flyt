@@ -49,11 +49,11 @@ export function parseSmartInput(
   }
 
   // Extract tags by matching known tag names (case-insensitive)
+  // Tag word is kept in remaining so it appears in the comment too
   for (const tag of tags) {
     const tagPattern = new RegExp(`\\b${escapeRegex(tag.name)}\\b`, 'i');
     if (tagPattern.test(remaining)) {
       result.tags.push(tag.name);
-      remaining = remaining.replace(tagPattern, '').trim();
     }
   }
 

@@ -241,7 +241,7 @@ const { weekDays, days, weekSummary, blocks: weekBlocks, projects: weekProjects 
       const isInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT';
 
       if (e.key === 'Escape') {
-        if (isModalOpen) setIsModalOpen(false);
+        if (isModalOpen) { setIsModalOpen(false); setModalStartTime(undefined); }
         else if (showSettings) setShowSettings(false);
         else if (showProjects) setShowProjects(false);
         return;

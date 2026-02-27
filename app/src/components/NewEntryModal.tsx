@@ -25,6 +25,7 @@ const NewEntryModal: React.FC<NewEntryModalProps> = ({
   const [duration, setDuration] = useState<15 | 30 | 60>(defaultDuration);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [billable, setBillable] = useState(true);
+  const [manualStartTime, setManualStartTime] = useState(startTime ?? '');
   const [showDropdown, setShowDropdown] = useState(false);
   const [dropdownIndex, setDropdownIndex] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -99,7 +100,7 @@ const NewEntryModal: React.FC<NewEntryModalProps> = ({
       comment: parsed.comment || text.trim(),
       tags: selectedTags,
       billable,
-      startTime,
+      startTime: manualStartTime || undefined,
     });
     onClose();
   };
@@ -110,6 +111,7 @@ const NewEntryModal: React.FC<NewEntryModalProps> = ({
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-md p-4"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }}
     >
       <div className="bg-white dark:bg-slate-900 w-full max-w-[520px] rounded-xl shadow-2xl overflow-hidden border border-white/20">
         {/* Header */}
@@ -230,9 +232,20 @@ const NewEntryModal: React.FC<NewEntryModalProps> = ({
             </div>
           </div>
 
-          {/* Quick Select Duration */}
-          <div>
-            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2 block">Hurtigvalg tid</label>
+          {/* Start time + Duration row */}
+          <div className="flex gap-4 items-end">
+            <div>
+              <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2 block">Klokkeslett</label>
+              <input
+                type="time"
+                value={manualStartTime}
+                onChange={(e) => setManualStartTime(e.target.value)}
+                placeholder="Auto"
+                className="px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-sm font-medium focus:ring-2 focus:ring-primary outline-none dark:text-white w-32"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2 block">Hurtigvalg tid</label>
             <div className="flex gap-2">
               {([15, 30, 60] as const).map((d) => (
                 <button
@@ -247,6 +260,7 @@ const NewEntryModal: React.FC<NewEntryModalProps> = ({
                   {d === 60 ? '1t' : `${d}m`}
                 </button>
               ))}
+            </div>
             </div>
           </div>
 
