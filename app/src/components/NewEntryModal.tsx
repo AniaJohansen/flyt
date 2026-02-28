@@ -109,13 +109,13 @@ const NewEntryModal: React.FC<NewEntryModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-md p-4"
+      className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/30 backdrop-blur-md md:p-4"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }}
     >
-      <div className="bg-white dark:bg-slate-900 w-full max-w-[520px] rounded-xl shadow-2xl overflow-hidden border border-white/20">
+      <div className="bg-white dark:bg-slate-900 w-full md:max-w-[520px] rounded-t-2xl md:rounded-xl shadow-2xl overflow-hidden border-0 md:border border-white/20 max-h-[95dvh] overflow-y-auto">
         {/* Header */}
-        <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+        <div className="px-4 md:px-6 py-4 md:py-5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
           <div>
             <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Ny føring</h2>
             <p className="text-sm text-slate-500">
@@ -128,7 +128,7 @@ const NewEntryModal: React.FC<NewEntryModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-6">
+        <div className="p-4 md:p-6 space-y-4 md:space-y-6">
           {/* Selected project chip */}
           {selectedProject && (
             <div className="flex items-center gap-2">
@@ -297,7 +297,7 @@ const NewEntryModal: React.FC<NewEntryModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-5 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-700 flex items-center justify-end gap-3">
+        <div className="px-4 md:px-6 py-4 md:py-5 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-700 flex items-center justify-end gap-3">
           <button onClick={onClose} className="px-5 py-2.5 text-sm font-bold text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors">
             Avbryt
           </button>

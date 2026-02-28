@@ -110,16 +110,16 @@ export function AllTimeReport({ open, onClose }: AllTimeReportProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-md p-4"
+      className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/30 backdrop-blur-md md:p-4"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-white dark:bg-slate-900 w-full max-w-2xl max-h-[88vh] rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 flex flex-col overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 w-full md:max-w-2xl max-h-[92dvh] md:max-h-[88vh] rounded-t-2xl md:rounded-xl shadow-2xl border-0 md:border border-slate-200 dark:border-slate-700 flex flex-col overflow-hidden">
 
         {/* Header */}
-        <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between flex-shrink-0">
+        <div className="px-4 md:px-6 py-4 md:py-5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between flex-shrink-0">
           <div>
-            <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Totaloversikt</h2>
-            <p className="text-sm text-slate-500">All registrert tid, summert per kunde og prosjekt</p>
+            <h2 className="text-lg md:text-xl font-bold tracking-tight text-slate-900 dark:text-white">Totaloversikt</h2>
+            <p className="text-xs md:text-sm text-slate-500">All registrert tid, summert per kunde og prosjekt</p>
           </div>
           <button
             onClick={onClose}
@@ -130,17 +130,17 @@ export function AllTimeReport({ open, onClose }: AllTimeReportProps) {
         </div>
 
         {/* Summary strip */}
-        <div className="px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-700 flex items-center gap-6 flex-shrink-0">
+        <div className="px-4 md:px-6 py-3 md:py-4 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-700 flex items-center gap-3 md:gap-6 flex-shrink-0 flex-wrap">
           <div>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Totalt</p>
-            <p className="text-2xl font-black text-slate-900 dark:text-white">{fmt(grandTotal)}</p>
+            <p className="text-xl md:text-2xl font-black text-slate-900 dark:text-white">{fmt(grandTotal)}</p>
           </div>
           <div className="w-px self-stretch bg-slate-200 dark:bg-slate-700" />
           <div>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Fakturerbar</p>
-            <p className="text-2xl font-black text-emerald-600">
+            <p className="text-xl md:text-2xl font-black text-emerald-600">
               {fmt(grandBillable)}
-              <span className="text-sm font-normal text-slate-400 ml-1.5">({billablePct}%)</span>
+              <span className="text-xs md:text-sm font-normal text-slate-400 ml-1">({billablePct}%)</span>
             </p>
           </div>
           {grandNonBillable > 0 && (
@@ -148,9 +148,9 @@ export function AllTimeReport({ open, onClose }: AllTimeReportProps) {
               <div className="w-px self-stretch bg-slate-200 dark:bg-slate-700" />
               <div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Ikke-fakturerbar</p>
-                <p className="text-2xl font-black text-slate-500">
+                <p className="text-xl md:text-2xl font-black text-slate-500">
                   {fmt(grandNonBillable)}
-                  <span className="text-sm font-normal text-slate-400 ml-1.5">({nonBillablePct}%)</span>
+                  <span className="text-xs md:text-sm font-normal text-slate-400 ml-1">({nonBillablePct}%)</span>
                 </p>
               </div>
             </>
@@ -175,7 +175,7 @@ export function AllTimeReport({ open, onClose }: AllTimeReportProps) {
         </div>
 
         {/* Client groups */}
-        <div className="overflow-y-auto flex-1 p-6 space-y-7">
+        <div className="overflow-y-auto flex-1 p-4 md:p-6 space-y-6 md:space-y-7">
           {clientGroups.length === 0 && (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <span className="material-symbols-outlined text-5xl text-slate-300 mb-3">bar_chart</span>
@@ -212,9 +212,9 @@ export function AllTimeReport({ open, onClose }: AllTimeReportProps) {
                   const hasBillable = billableMinutes > 0;
 
                   return (
-                    <div key={project.id} className="flex items-center gap-3">
+                    <div key={project.id} className="flex items-center gap-2 md:gap-3">
                       {/* Code + type */}
-                      <div className="flex-shrink-0 w-44">
+                      <div className="flex-shrink-0 w-28 md:w-44">
                         <span
                           className="text-[11px] font-black px-2 py-0.5 rounded inline-block"
                           style={{ color: project.color, backgroundColor: `${project.color}18` }}
@@ -254,7 +254,7 @@ export function AllTimeReport({ open, onClose }: AllTimeReportProps) {
                       </div>
 
                       {/* Time summary */}
-                      <div className="w-36 flex-shrink-0 text-right">
+                      <div className="w-24 md:w-36 flex-shrink-0 text-right">
                         {hasBillable && hasNonBillable ? (
                           <span className="text-sm font-bold tabular-nums dark:text-white">
                             {fmt(billableMinutes)}{' '}
@@ -273,8 +273,8 @@ export function AllTimeReport({ open, onClose }: AllTimeReportProps) {
 
               {/* Client subtotal divider (only when multiple projects) */}
               {client.projects.length > 1 && (
-                <div className="mt-3 pt-2 border-t border-slate-100 dark:border-slate-700 flex items-center gap-3">
-                  <div className="w-44 flex-shrink-0" />
+                <div className="mt-3 pt-2 border-t border-slate-100 dark:border-slate-700 flex items-center gap-2 md:gap-3">
+                  <div className="w-28 md:w-44 flex-shrink-0" />
                   <div className="flex-1 text-[11px] font-medium text-slate-400">
                     {client.nonBillableMinutes > 0 ? (
                       <span>
@@ -286,7 +286,7 @@ export function AllTimeReport({ open, onClose }: AllTimeReportProps) {
                       <span className="text-emerald-600 font-bold">{fmt(client.billableMinutes)} fakturerbar</span>
                     )}
                   </div>
-                  <div className="w-36 flex-shrink-0" />
+                  <div className="w-24 md:w-36 flex-shrink-0" />
                 </div>
               )}
             </div>

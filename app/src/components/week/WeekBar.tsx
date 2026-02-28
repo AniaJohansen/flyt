@@ -35,14 +35,14 @@ export function WeekBar({
     .filter(({ i }) => showWeekends || i < 5);
 
   return (
-    <div className="grid grid-cols-7 gap-4">
+    <div className="grid grid-cols-7 gap-1.5 md:gap-4">
       {/* Progress Card */}
-      <div className="col-span-3 bg-slate-50 dark:bg-slate-800 rounded-xl p-4 border border-slate-100 dark:border-slate-700">
-        <div className="flex justify-between items-end mb-4">
+      <div className="col-span-3 bg-slate-50 dark:bg-slate-800 rounded-xl p-2.5 md:p-4 border border-slate-100 dark:border-slate-700">
+        <div className="flex justify-between items-end mb-2 md:mb-4">
           <div>
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Ukentlig fremdrift</p>
-            <p className="text-2xl font-black text-slate-900 dark:text-white">
-              {totalWeekHours} <span className="text-slate-400 font-medium">/ 37,5 timer</span>
+            <p className="hidden md:block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Ukentlig fremdrift</p>
+            <p className="text-base md:text-2xl font-black text-slate-900 dark:text-white">
+              {totalWeekHours}<span className="hidden md:inline text-slate-400 font-medium"> / 37,5 timer</span><span className="md:hidden text-slate-400 font-medium text-xs">t</span>
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -71,7 +71,7 @@ export function WeekBar({
       </div>
 
       {/* Daily Mini Bars */}
-      <div className="col-span-4 flex justify-between gap-1.5 items-end pb-1">
+      <div className="col-span-4 flex justify-between gap-1 md:gap-1.5 items-end pb-1">
         {visibleDays.map(({ day, summary, i }) => {
           const dateStr = formatDate(day);
           const dayMinutes = summary?.totalMinutes ?? 0;
@@ -85,14 +85,14 @@ export function WeekBar({
               key={dateStr}
               type="button"
               onClick={() => onSelectDate(dateStr)}
-              className={`flex flex-col items-center gap-1.5 flex-1 rounded-xl px-1 py-2 transition-all ${
+              className={`flex flex-col items-center gap-1 md:gap-1.5 flex-1 rounded-xl px-0.5 md:px-1 py-1.5 md:py-2 transition-all ${
                 isSelected
                   ? 'bg-primary/10'
                   : 'hover:bg-slate-100 dark:hover:bg-slate-800'
               } ${isWeekend && dayMinutes === 0 ? 'opacity-40' : ''}`}
             >
               <div
-                className={`w-full rounded-sm relative h-20 overflow-hidden ${
+                className={`w-full rounded-sm relative h-12 md:h-20 overflow-hidden ${
                   isWeekend ? 'bg-slate-200 dark:bg-slate-700' : 'bg-primary/15'
                 } ${isSelected ? 'ring-2 ring-primary ring-offset-1' : ''}`}
               >

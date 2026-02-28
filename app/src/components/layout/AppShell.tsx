@@ -41,6 +41,7 @@ export function AppShell() {
   const [activeNav, setActiveNav] = useState<'dashboard' | 'projects' | 'settings'>('dashboard');
   const [undoStack, setUndoStack] = useState<UndoOp[]>([]);
   const [redoStack, setRedoStack] = useState<UndoOp[]>([]);
+  const [showMobileSidebar, setShowMobileSidebar] = useState(false);
 
 const { weekDays, days, weekSummary, blocks: weekBlocks, projects: weekProjects } =
     useWeek(currentDate);
@@ -115,7 +116,6 @@ const { weekDays, days, weekSummary, blocks: weekBlocks, projects: weekProjects 
     [pushUndo],
   );
 
-
   const handleDeleteTimeBlock = useCallback(async (id: string) => {
     const block = blocksRef.current.find(b => b.id === id);
     if (block) pushUndo({ type: 'deleted', block });
@@ -160,6 +160,7 @@ const { weekDays, days, weekSummary, blocks: weekBlocks, projects: weekProjects 
     setActiveNav(nav);
     if (nav === 'projects') setShowProjects(true);
     if (nav === 'settings') setShowSettings(true);
+    setShowMobileSidebar(false);
   };
 
   const undo = useCallback(async () => {
@@ -244,6 +245,7 @@ const { weekDays, days, weekSummary, blocks: weekBlocks, projects: weekProjects 
         if (isModalOpen) { setIsModalOpen(false); setModalStartTime(undefined); }
         else if (showSettings) setShowSettings(false);
         else if (showProjects) setShowProjects(false);
+        else if (showMobileSidebar) setShowMobileSidebar(false);
         return;
       }
 
@@ -260,12 +262,11 @@ const { weekDays, days, weekSummary, blocks: weekBlocks, projects: weekProjects 
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [isModalOpen, showSettings, showProjects, undo, redo]);
+  }, [isModalOpen, showSettings, showProjects, showMobileSidebar, undo, redo]);
 
   const selectedDateObj = parseDate(selectedDate);
   const weekNum = getWeekNumber(weekDays[0]);
   const weekRange = formatWeekRange(weekDays);
-
 
   const totalWeekHours = (weekSummary.totalMinutes / 60).toFixed(1).replace('.', ',');
   const weekProgress = Math.min(100, Math.round((weekSummary.totalMinutes / (7.5 * 5 * 60)) * 100));
@@ -287,21 +288,41 @@ const { weekDays, days, weekSummary, blocks: weekBlocks, projects: weekProjects 
 
   return (
     <div className="flex h-screen overflow-hidden">
-      {/* Sidebar */}
-      <aside className="w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 flex flex-col">
-        <div className="p-6 flex items-center gap-3">
-          <div className="size-10 bg-primary rounded-lg flex items-center justify-center text-white">
+      {/* Mobile sidebar backdrop */}
+      {showMobileSidebar && (
+        <div
+          className="fixed inset-0 bg-black/40 z-30 md:hidden"
+          onClick={() => setShowMobileSidebar(false)}
+        />
+      )}
+
+      {/* Sidebar — fixed overlay on mobile, static flex child on desktop */}
+      <aside className={`
+        fixed inset-y-0 left-0 z-40 flex flex-col w-72
+        bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700
+        transition-transform duration-300
+        md:static md:z-auto md:w-64 md:translate-x-0
+        ${showMobileSidebar ? 'translate-x-0' : '-translate-x-full'}
+      `}>
+        <div className="p-5 flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 md:border-0 md:p-6">
+          <div className="size-10 bg-primary rounded-lg flex items-center justify-center text-white flex-shrink-0">
             <span className="material-symbols-outlined">update</span>
           </div>
-          <div>
+          <div className="flex-1 min-w-0">
             <h1 className="text-lg font-bold leading-tight dark:text-white">Flyt</h1>
             <p className="text-xs text-slate-500 font-medium tracking-wide uppercase">Timeføring</p>
           </div>
+          <button
+            className="md:hidden p-1 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
+            onClick={() => setShowMobileSidebar(false)}
+          >
+            <span className="material-symbols-outlined">close</span>
+          </button>
         </div>
-        <nav className="flex-1 px-4 space-y-1">
+        <nav className="flex-1 px-4 space-y-1 py-2">
           <button
             onClick={() => handleNavClick('dashboard')}
-            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
               activeNav === 'dashboard'
                 ? 'bg-primary/10 text-primary font-semibold'
                 : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
@@ -312,7 +333,7 @@ const { weekDays, days, weekSummary, blocks: weekBlocks, projects: weekProjects 
           </button>
           <button
             onClick={() => handleNavClick('projects')}
-            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
               activeNav === 'projects'
                 ? 'bg-primary/10 text-primary font-semibold'
                 : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
@@ -323,7 +344,7 @@ const { weekDays, days, weekSummary, blocks: weekBlocks, projects: weekProjects 
           </button>
           <button
             onClick={() => handleNavClick('settings')}
-            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
               activeNav === 'settings'
                 ? 'bg-primary/10 text-primary font-semibold'
                 : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
@@ -347,35 +368,48 @@ const { weekDays, days, weekSummary, blocks: weekBlocks, projects: weekProjects 
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col overflow-hidden bg-background-light dark:bg-background-dark">
+      <main className="flex-1 flex flex-col overflow-hidden bg-background-light dark:bg-background-dark min-w-0">
         {/* Top Header & Weekly Summary */}
-        <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 p-6">
-          <div className="flex justify-between items-start mb-6">
-            <div>
-              <h2 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">Min tidsbank</h2>
-              <p className="text-slate-500 font-medium">Uke {weekNum} &bull; {weekRange}</p>
+        <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 px-4 py-4 md:p-6">
+          <div className="flex justify-between items-center mb-4 md:mb-6">
+            <div className="flex items-center gap-2 md:gap-0">
+              {/* Hamburger — mobile only */}
+              <button
+                className="md:hidden p-2 -ml-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                onClick={() => setShowMobileSidebar(true)}
+              >
+                <span className="material-symbols-outlined text-slate-600 dark:text-slate-400">menu</span>
+              </button>
+              <div>
+                <h2 className="text-xl md:text-3xl font-black tracking-tight text-slate-900 dark:text-white">Min tidsbank</h2>
+                <p className="text-slate-500 text-xs md:text-sm font-medium">Uke {weekNum} &bull; {weekRange}</p>
+              </div>
             </div>
-            <div className="flex gap-3">
+            {/* Action buttons — icon-only on mobile */}
+            <div className="flex gap-1.5 md:gap-3">
               <button
                 onClick={() => setShowReport(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm font-bold text-slate-900 dark:text-white hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+                className="flex items-center gap-2 p-2 md:px-4 md:py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-900 dark:text-white hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+                title="Totaloversikt"
               >
                 <span className="material-symbols-outlined text-sm">bar_chart</span>
-                Totaloversikt
+                <span className="hidden md:inline text-sm font-bold">Totaloversikt</span>
               </button>
               <button
                 onClick={handleExport}
-                className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm font-bold text-slate-900 dark:text-white hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+                className="flex items-center gap-2 p-2 md:px-4 md:py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-900 dark:text-white hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+                title="Kopier uke"
               >
                 <span className="material-symbols-outlined text-sm">content_copy</span>
-                Kopier uke
+                <span className="hidden md:inline text-sm font-bold">Kopier uke</span>
               </button>
               <button
                 onClick={handleDownloadCSV}
-                className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm font-bold text-slate-900 dark:text-white hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+                className="flex items-center gap-2 p-2 md:px-4 md:py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-900 dark:text-white hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+                title="Last ned CSV"
               >
                 <span className="material-symbols-outlined text-sm">download</span>
-                Last ned CSV
+                <span className="hidden md:inline text-sm font-bold">Last ned CSV</span>
               </button>
             </div>
           </div>
@@ -397,15 +431,15 @@ const { weekDays, days, weekSummary, blocks: weekBlocks, projects: weekProjects 
 
         <div className="flex flex-1 overflow-hidden">
           {/* Timeline Center */}
-          <div className="flex-1 overflow-y-auto p-8 relative">
+          <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8 relative">
             <div className="max-w-3xl mx-auto">
-              <div className="flex items-center justify-between mb-8">
-                <h3 className="text-xl font-bold dark:text-white">
+              <div className="flex items-center justify-between mb-6 md:mb-8">
+                <h3 className="text-lg md:text-xl font-bold dark:text-white">
                   {settings.trackingMode === 'blocks' ? 'Dagens bolker' : 'Dagens tidslinje'}{' '}
                   — <span className="font-medium text-slate-500">{formatWeekdayDate(selectedDateObj)}</span>
                 </h3>
                 {settings.trackingMode !== 'blocks' && (
-                  <div className="flex items-center gap-2 text-sm text-slate-500">
+                  <div className="hidden md:flex items-center gap-2 text-sm text-slate-500">
                     <span className="size-2 rounded-full bg-primary"></span> Ført tid
                     <span className="size-2 rounded-full border border-slate-300 ml-4"></span> Ledig tid
                   </div>
@@ -434,12 +468,11 @@ const { weekDays, days, weekSummary, blocks: weekBlocks, projects: weekProjects 
                   onFillGap={handleFillGap}
                 />
               )}
-
             </div>
 
-            {/* Keyboard Shortcut Hint */}
+            {/* Keyboard Shortcut Hint — desktop only */}
             {!isModalOpen && !showSettings && !showProjects && (
-              <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 text-slate-300 text-[11px] font-bold px-4 py-2 rounded-full flex gap-4 shadow-2xl z-50">
+              <div className="hidden md:flex fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 text-slate-300 text-[11px] font-bold px-4 py-2 rounded-full gap-4 shadow-2xl z-50">
                 <span className="flex items-center gap-1.5"><kbd className="bg-slate-800 px-1.5 py-0.5 rounded text-white border border-slate-700">N</kbd> Ny føring</span>
                 <span className="flex items-center gap-1.5"><kbd className="bg-slate-800 px-1.5 py-0.5 rounded text-white border border-slate-700">Ctrl+Z</kbd> Angre</span>
                 <span className="flex items-center gap-1.5"><kbd className="bg-slate-800 px-1.5 py-0.5 rounded text-white border border-slate-700">Ctrl+Y</kbd> Gjør om</span>
@@ -448,8 +481,8 @@ const { weekDays, days, weekSummary, blocks: weekBlocks, projects: weekProjects 
             )}
           </div>
 
-          {/* Right Panel */}
-          <aside className="w-80 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-700 flex flex-col">
+          {/* Right Panel — desktop only */}
+          <aside className="hidden md:flex w-80 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-700 flex-col">
             <div className="p-6 flex-1 flex flex-col">
               <h3 className="font-bold text-slate-900 dark:text-white mb-4">Statistikk denne uken</h3>
               <div className="space-y-4">
@@ -520,7 +553,7 @@ const { weekDays, days, weekSummary, blocks: weekBlocks, projects: weekProjects 
               <div className="mt-auto bg-primary/5 rounded-xl p-4 border border-primary/10">
                 <p className="text-xs font-bold text-primary mb-1 uppercase tracking-widest">Tips</p>
                 <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                  Trykk <kbd className="px-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded">N</kbd> for ny registrering, <kbd className="px-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded">/</kbd> for å søke prosjekt.
+                  Trykk <kbd className="px-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded">N</kbd> for ny registrering.
                 </p>
               </div>
             </div>
@@ -528,9 +561,47 @@ const { weekDays, days, weekSummary, blocks: weekBlocks, projects: weekProjects 
         </div>
       </main>
 
+      {/* Mobile bottom navigation */}
+      <nav className="fixed bottom-0 left-0 right-0 z-30 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700 md:hidden flex safe-area-pb">
+        <button
+          onClick={() => handleNavClick('dashboard')}
+          className={`flex-1 flex flex-col items-center py-2.5 gap-0.5 transition-colors ${
+            activeNav === 'dashboard' ? 'text-primary' : 'text-slate-500 dark:text-slate-400'
+          }`}
+        >
+          <span className="material-symbols-outlined text-[22px]">dashboard</span>
+          <span className="text-[10px] font-bold">Hjem</span>
+        </button>
+        <button
+          onClick={() => { setModalStartTime(undefined); setIsModalOpen(true); }}
+          className="flex-1 flex flex-col items-center py-2.5 gap-0.5 text-primary transition-colors"
+        >
+          <span className="material-symbols-outlined text-[26px]">add_circle</span>
+          <span className="text-[10px] font-bold">Ny</span>
+        </button>
+        <button
+          onClick={() => handleNavClick('projects')}
+          className={`flex-1 flex flex-col items-center py-2.5 gap-0.5 transition-colors ${
+            activeNav === 'projects' ? 'text-primary' : 'text-slate-500 dark:text-slate-400'
+          }`}
+        >
+          <span className="material-symbols-outlined text-[22px]">work</span>
+          <span className="text-[10px] font-bold">Prosjekter</span>
+        </button>
+        <button
+          onClick={() => handleNavClick('settings')}
+          className={`flex-1 flex flex-col items-center py-2.5 gap-0.5 transition-colors ${
+            activeNav === 'settings' ? 'text-primary' : 'text-slate-500 dark:text-slate-400'
+          }`}
+        >
+          <span className="material-symbols-outlined text-[22px]">settings</span>
+          <span className="text-[10px] font-bold">Innstillinger</span>
+        </button>
+      </nav>
+
       {/* Toast */}
       {toast && (
-        <div className="fixed bottom-16 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-sm font-semibold px-6 py-3 rounded-xl shadow-2xl z-[60] animate-fade-in">
+        <div className="fixed bottom-20 md:bottom-16 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-sm font-semibold px-6 py-3 rounded-xl shadow-2xl z-[60] animate-fade-in">
           {toast}
         </div>
       )}
