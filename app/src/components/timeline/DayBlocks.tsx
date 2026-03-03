@@ -168,13 +168,11 @@ export function DayBlocks({ blocks, projects, onAdd, onDeleteBlock, onUpdateBloc
               >
                 <div className="flex items-baseline gap-2 flex-wrap">
                   <span className="text-sm font-bold text-slate-900 dark:text-white">
-                    {project.code}
+                    {project.clientName || project.name}
                   </span>
-                  {project.clientName && (
-                    <span className="text-xs text-slate-500 truncate">{project.clientName}</span>
-                  )}
+                  <span className="text-xs text-slate-400 font-medium">{project.code}</span>
                 </div>
-                {project.name && (
+                {project.clientName && (
                   <p className="text-xs text-slate-400 truncate">{project.name}</p>
                 )}
               </button>

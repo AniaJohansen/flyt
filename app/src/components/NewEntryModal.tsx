@@ -207,10 +207,7 @@ const NewEntryModal: React.FC<NewEntryModalProps> = ({
                 <span className="text-[10px] text-slate-400 uppercase">Prosjekt</span>
                 {selectedProject ? (
                   <span className="text-sm font-bold text-primary">
-                    {selectedProject.code}
-                    {selectedProject.clientName && (
-                      <span className="font-normal text-slate-500 ml-1">· {selectedProject.clientName}</span>
-                    )}
+                    {selectedProject.clientName || selectedProject.name}
                   </span>
                 ) : (
                   <span className="text-sm italic text-slate-400">Venter...</span>
