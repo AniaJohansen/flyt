@@ -457,6 +457,7 @@ const { weekDays, days, weekSummary, blocks: weekBlocks, projects: weekProjects 
                   projects={coloredProjects}
                   onAdd={handleBlockModeAdd}
                   onDeleteBlock={handleDeleteTimeBlock}
+                  onUpdateBlock={handleUpdateBlock}
                 />
               ) : (
                 <DayTimeline

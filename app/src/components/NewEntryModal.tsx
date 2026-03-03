@@ -136,10 +136,15 @@ const NewEntryModal: React.FC<NewEntryModalProps> = ({
                 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-bold text-white"
                 style={{ backgroundColor: selectedProject.color }}
               >
-                {selectedProject.code} — {selectedProject.name}
+                <span className="font-black">{selectedProject.code}</span>
+                <span className="opacity-80 font-normal">
+                  {selectedProject.clientName
+                    ? `${selectedProject.clientName} – ${selectedProject.name}`
+                    : selectedProject.name}
+                </span>
                 <button
                   onClick={() => setSelectedProject(null)}
-                  className="hover:opacity-70"
+                  className="hover:opacity-70 ml-1"
                 >
                   &times;
                 </button>
@@ -200,9 +205,16 @@ const NewEntryModal: React.FC<NewEntryModalProps> = ({
             <div className="flex flex-wrap gap-4">
               <div className="flex flex-col">
                 <span className="text-[10px] text-slate-400 uppercase">Prosjekt</span>
-                <span className={`text-sm font-bold ${selectedProject ? 'text-primary' : 'italic text-slate-400'}`}>
-                  {selectedProject ? selectedProject.code : 'Venter...'}
-                </span>
+                {selectedProject ? (
+                  <span className="text-sm font-bold text-primary">
+                    {selectedProject.code}
+                    {selectedProject.clientName && (
+                      <span className="font-normal text-slate-500 ml-1">· {selectedProject.clientName}</span>
+                    )}
+                  </span>
+                ) : (
+                  <span className="text-sm italic text-slate-400">Venter...</span>
+                )}
               </div>
               <div className="w-px h-8 bg-slate-100 dark:bg-slate-700"></div>
               <div className="flex flex-col">
